@@ -1,166 +1,178 @@
-# the402 session handoff
+# the402 handoff
 
-Written 2026-08-15. This is the doc of record for picking up the402. Read it
-before touching anything, then verify the state described here rather than
-trusting it.
+Written 2026-08-15. Read this first, then verify the state rather than trusting
+it. Everything below was true when written and some of it decays fast.
 
-## What this is
+## Read this part first
 
-Two live products on Cloudflare Workers, plus the measurement that justifies
-them.
+**x402 is one idea. The machine we built is not specific to it.**
 
-- **[the402.dev](https://the402.dev)**, a directory of x402 payment endpoints
-  where every listing we could call was called.
-- **[api.the402.dev](https://api.the402.dev)**, the free validator that does the
-  calling. No key, no signup.
+What actually exists is a verification engine and a publishing pipeline. It
+calls arbitrary HTTP endpoints, works out how to talk to them, classifies what
+came back, and refuses to guess when it cannot tell. x402 was just the first
+thing pointed at.
 
-The positioning is the important part: **the product is the measurement, not the
-directory.** Eight x402 directories already existed when this started, including
-Coinbase's own Bazaar. Building a ninth list was not worth doing. Calling every
-endpoint and reporting honestly was.
+The x402 network moves roughly $14k a day of real volume. That is small, and
+Salem knows it. He has decided to launch what is built, and that decision is
+**not** up for relitigating. But he is explicitly open to pointing these assets
+somewhere with more money in it, and that is the most valuable open question in
+the project.
+
+**Your job includes evaluating that.** See "The open question" at the bottom.
+
+## What is transferable
+
+None of this is x402-specific:
+
+- **A probe engine** (`api/src/index.ts`) that discovers the right HTTP method,
+  recovers parameters from error bodies, follows self-describing responses, and
+  reports every attempt so a verdict can be audited. The chain it walks is
+  genuinely non-obvious: GET, read a 200 that names POST, POST, read a 400 that
+  carries a worked example, retry with it, get the answer.
+- **A harvest pipeline** (`scripts/harvest.py`, `import_to_d1.py`) that pulls a
+  source of record, verifies every entry, and loads results with count checks.
+- **A directory** (`directory/`) on Workers and D1: search, filters, detail
+  pages, submissions that verify before publishing, a JSON API, sitemap.
+- **A dated dataset**: 15,189 endpoints, 1,553 hosts, with prices, networks,
+  methods and failure modes.
+- **A reputation position** built on refusing to overclaim, which is the part
+  that took the most work and transfers to any measurement product.
+- **Warm contact with 95 operators** whose services have a defect we can prove.
 
 ## Current state
 
 | Thing | State |
 |---|---|
-| Directory | Live, 15,190 listings, D1-backed |
-| Validator | Live, handles both spec dialects, POST-only endpoints, param-required endpoints |
+| [the402.dev](https://the402.dev) | Live, ~15,190 listings, D1-backed |
+| [api.the402.dev](https://api.the402.dev) | Live validator, free, no key |
 | Measurement post | Written, `docs/measurement-post.md` |
-| Launch copy, five channels plus outreach | Written, `docs/launch-copy.md` |
-| GTM plan with monetization | Written, `docs/gtm-plan.md` |
+| Launch copy, five channels plus outreach emails | Written, `docs/launch-copy.md` |
+| GTM with four revenue lines | Written, `docs/gtm-plan.md` |
 | README, budget log | Written |
-| Tutorial | Not written. Decoupled from launch deliberately |
-| Paid `/batch` endpoint | Not built. Needs a receiving wallet address from Salem |
+| Tutorial | Not written, deliberately decoupled from launch |
+| Paid `/batch` endpoint | Not built, needs a wallet address from Salem |
+| Rate limiting | **Not built. Highest priority. See below** |
 | Amon's curation of 402 listings | Not started, blocked on his side |
 
-**Launch decision: made. Salem is launching.** Do not reopen that unless a
-genuinely new blocker appears.
+Repo: `github.com/sa1emie/the402`, public, single clean commit history.
+Spend to date: $12.20. Revenue: $0.
 
-## Repo
+## Do this before anything is promoted
 
-`github.com/sa1emie/the402`, **public**. It was briefly public with an API key
-in it, which is why history was rewritten to a single clean commit. Verify
-before adding anything:
+**Rate limit `/submit` and `/validate`.** Two independent external reviews
+flagged it. `/validate` is unauthenticated and makes outbound requests on
+demand. `/submit` publishes immediately with no Turnstile. One harvest already
+burns roughly 28k of a 100k daily subrequest quota. The launch plan points
+Hacker News straight at it, so as it stands **the launch is the abuse
+scenario.** Roughly an hour of work.
 
-```bash
-git grep -nIE 'sk-[A-Za-z0-9]{16,}|AKIA[0-9A-Z]{16}' $(git rev-list --all)
-```
-
-Deliberately **not** in the repo, and gitignored: `AMON-*.md` and
-`for-amon-curation.json` (they name a real collaborator and describe how he
-works), `X402_SPRINT_HANDOFF.md`, `AUDIT-PROMPT.md`, `docs/audit-report.md`,
-`tunnel/` (holds a live VLESS UUID), and `docs/external-review-*.md`.
-
-## The numbers, and where they come from
-
-Canonical source is `data/verified-full-v2.json`. D1 is derived from it. Never
-type a number into a doc; regenerate it.
-
-As measured 2026-08-15: Bazaar listed 15,189, we called 14,352, and 838 have
-templated paths like `/tx/:hash` that we cannot call without inventing a value.
-Of those called, 13,932 answered with a payment challenge, and **6,435 of those,
-46%, answer only to POST.** That 46% is the headline.
-
-The live site total drifts above 15,189 because `/submit` publishes immediately.
-A gap of a few is expected. A gap of hundreds means an import dropped rows.
-
-## Things that will bite you
+## Rules that protect the position
 
 **Say "answers 402", never "works" or "verified".** We parse the payment
-challenge and never complete a payment. Every doc holds this line and it is the
-whole credibility position.
+challenge and never complete a payment. Every doc holds this line.
 
 **Never claim anything about how other directories probe.** We have not audited
-one of them. Two separate external reviews flagged this as the single fastest
-way to lose the argument in public, since the eight directory authors will read
-the post and know their own methods.
+one of them. Two reviews independently called this the fastest way to lose the
+argument in public, because the eight directory authors will read the post and
+know their own methods.
 
-**Worker deploys take about 70 seconds to propagate.** Poll until responses are
-consistent before believing a test, or you will chase phantoms.
+**Numbers: 15,189 listed, 14,352 called, 838 not callable.** Do not write "we
+called all 15,189". A review caught that and it would have been the first thing
+a hostile reader checked.
 
-**D1 `execute --file` reports success while applying part of a file.** 1,500
-statement chunks silently lost about 100 rows each. Use 300 and always verify
-the row count afterwards.
+Canonical source is `data/verified-full-v2.json`. D1 derives from it. Never type
+a number into a doc, regenerate it.
 
-**`kimi-k3` only accepts `temperature: 1`** and needs a long timeout. Both are
-handled in `scripts/external_review.py`, but the failure looks like a rate limit
-if you do not read the error body.
+## Traps that cost real time here
 
-**Background jobs: do not use `nohup` or a trailing `&`.** Both get killed when
-the tool's shell exits. Use the built-in backgrounding instead.
-
-**Zsh here is non-interactive**, so `~/.zshrc` is not read. API keys live in
-`~/.zshenv`.
+- **Worker deploys take ~70 seconds to propagate.** Poll until consistent or you
+  will chase phantoms.
+- **D1 `execute --file` reports success while applying part of a file.** 1,500
+  statement chunks silently lost ~100 rows each. Use 300 and verify the count.
+- **`kimi-k3` accepts only `temperature: 1`** and needs a long timeout. The
+  failure looks like a rate limit unless you read the error body.
+- **No `nohup`, no trailing `&`** for background jobs. Both die when the shell
+  exits. Use the built-in backgrounding.
+- **Zsh here is non-interactive**, so `~/.zshrc` is skipped. Keys live in
+  `~/.zshenv`.
+- **Slug truncation collided** and silently merged 36 endpoints into 9 ids.
+  Fixed with a hash suffix, but check id uniqueness after any id change.
 
 ## The external review loop
 
-This is the working pattern Salem wants: do work, get DeepSeek and Kimi to
-review it, incorporate, present.
+The working pattern: do the work, have DeepSeek and Kimi attack it, verify their
+claims, fix what survives, then present.
 
 ```bash
-python3 scripts/external_review.py --list-models   # confirm model ids
-python3 scripts/external_review.py --panel         # all five reviews
+python3 scripts/external_review.py --list-models
+python3 scripts/external_review.py --panel
 ```
 
-DeepSeek gets questions with a right answer (`numbers`, `code`). Kimi gets
-questions with an argument (`strategy`, `copy`, `redteam`). Reviews land in
-`docs/` and are gitignored.
+DeepSeek (`deepseek-v4-pro`) gets questions with a right answer. Kimi
+(`kimi-k3`) gets questions with an argument. Output lands in `docs/` and is
+gitignored.
 
-**Verify every claim a review makes.** They have been wrong. The first external
-audit's headline finding, that statepulse is our own endpoint, was false, and
-that error propagated into a later Kimi review five days on until it was
-annotated. `docs/audit-report.md` now carries a correction block at the top.
-
-Reviews have caught real things: a headline claiming we called 838 endpoints we
-never called, a percentage against the wrong denominator, "re-checkable with one
-curl" being false for aggregates, and unverified claims about competitors.
+**Verify every claim before acting.** They have been confidently wrong. The
+first audit's headline finding was false, and it propagated into a later review
+until `docs/audit-report.md` was annotated. They have also caught things worth
+the whole exercise: a headline counting endpoints we never called, a percentage
+against the wrong denominator, and a free API tier that gave away the paid
+product.
 
 ## Two cloud routines, running
 
-- `the402 number integrity check`, `trig_01EThxN2vPXPDq1uivuhvvJA`, every 6h.
-  Verifies published numbers against live data, no repo needed.
-- `the402 launch polish`, `trig_015ueBPiQ3HKnsRVHLrBUZ6T`, every 6h. Clones the
-  repo, re-verifies numbers, improves the weakest asset, opens a PR.
+- `the402 number integrity check`, `trig_01EThxN2vPXPDq1uivuhvvJA`, every 6h,
+  verifies published numbers against live data.
+- `the402 launch polish`, `trig_015ueBPiQ3HKnsRVHLrBUZ6T`, every 6h, clones the
+  repo, re-verifies, improves the weakest asset, opens a PR.
 
-Manage at https://claude.ai/code/routines
+https://claude.ai/code/routines
 
-## What to do next, in order
+## The open question, and how to work it
 
-1. **Rate limit `/submit` and `/validate`.** Two independent reviews flagged
-   this. `/validate` is unauthenticated and makes outbound requests, `/submit`
-   publishes immediately with no Turnstile, and a harvest already burns roughly
-   28k of a 100k daily subrequest quota. Pointing HN at this as-is is the abuse
-   scenario. **This is the highest priority and it is not done.**
-2. **Ship the launch.** Copy is ready in `docs/launch-copy.md`. Show HN first,
-   midweek, early US morning. Everything else over the following 48 hours.
-3. **Run the phase 3 outreach.** Nine hosts are giving paid content away right
-   now and do not know. That email asks for nothing and is the warmest possible
-   introduction. It is also the top of the monetization funnel.
-4. **Build `/batch`** once Salem provides a receiving wallet address. Delivers
-   the paid product and gives the tutorial real code to document.
-5. **Merge Amon's curation** when it arrives. Regenerate his file from the
-   current harvest first, do not send the stale one.
+Salem's framing: *"x402 is only an idea at the end of the day. We've built a
+lot. Let's capitalise, even if we have to pivot."*
 
-## Monetization, the open question
+So the question is not whether to launch, it is what else this machine should be
+pointed at. Work it with the same loop, using the external models for ideas
+rather than only for critique. A prompt that works:
 
-The GTM now has three revenue lines: endpoint monitoring at $29/host/month,
-the verified feed licensed to other directories at $99 to $299, and paid batch
-validation. Success metric is **one paying customer within thirty days.**
+> Do not critique the project. The team has built and can redeploy in days: a
+> probe engine that calls arbitrary HTTP endpoints, discovers the right method,
+> recovers parameters from error bodies, and refuses to guess; a harvest and
+> verification pipeline; a live directory on Workers and D1; a dated dataset of
+> 15,189 endpoints across 1,553 hosts; and warm contact with 95 operators whose
+> services have a provable defect. The market it currently serves moves about
+> $14k a day, which is small. Name three concrete places to point these assets
+> where the money is larger. For each: what gets reused, who pays and how much,
+> the wedge, and the strongest reason it fails. Rank them, pick one, and
+> describe the first week.
 
-An external red team's verdict was that without a paying counterparty this is a
-hobby with a launch date. Salem has read that and chosen to launch anyway, which
-is a legitimate call given the option value is real and the holding cost is
-close to zero. Do not relitigate it. Do work on making the monetization land.
+Obvious adjacencies worth testing, none of them researched yet, all of them
+guesses to be checked rather than recommendations:
+
+- **MCP servers.** Far more numerous than x402 endpoints, growing faster, and
+  the same "does this actually work" question applies. agent-tools.cloud already
+  indexes MCP, x402 and A2A together, which suggests the adjacency is real.
+- **General agent-facing API health.** The engine does not care what protocol it
+  probes.
+- **Selling the verification layer** to whoever owns a registry, rather than
+  running a competing one.
+
+Two constraints to carry into any pivot: keep the honesty position, since it is
+the hardest-won asset, and prefer markets where somebody already pays for
+something adjacent, because the x402 lesson is that a technically interesting
+network with no money in it stays that way.
 
 ## Salem's standards
 
-Load `salem-house-rules` before writing anything. The short version: zero em
-dashes, no marketing words, plain and neighborly, and run the pre-delivery check
-on every prose file before claiming it is done.
+Load `salem-house-rules` before writing prose. Zero em dashes, no marketing
+words, plain and neighborly, and run the check before claiming anything is done:
 
 ```bash
 /Users/salemyakoob/Desktop/projects/skills/.claude/skills/salem-house-rules/scripts/predelivery-check.sh <files>
 ```
 
-Do the direct thing first. Flag concerns after, not instead. If a fix misses
-twice, stop and state the hypothesis before touching more code.
+Do the direct thing first, flag concerns after rather than instead. If a fix
+misses twice, stop and state the hypothesis before touching more code. He works
+fast and will tell you when to slow down.
