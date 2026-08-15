@@ -288,18 +288,24 @@ Check it yourself:
 curl "https://api.the402.dev/validate?url=<endpoint>"
 ```
 
-### 6c. The 421 mislabelled elsewhere
+### 6c. The 421 a naive probe misses
 
-**Subject:** `your endpoint shows as dead on some x402 directories`
+We measured our own probe getting these wrong. We have not audited what any
+other directory reports, so the email must not assert that anyone else has
+them wrong. Say what we observed and stop.
+
+**Subject:** `your x402 endpoint needs POST, which trips up simple probes`
 
 ```
 Hi,
 
-I run the402.dev. Your endpoint <endpoint> only answers to POST, and several
-directories probe with GET, so it can show up as dead or missing.
+I run the402.dev. Your endpoint <endpoint> only answers to POST. A plain GET
+returns <status>, which reads as a dead endpoint to anything checking the
+simple way. Our own first pass got this wrong and recorded it as dead until we
+fixed the probe.
 
-Nothing wrong on your end. Just worth knowing that discovery tools may be
-misreporting you.
+Nothing wrong on your end. Worth knowing only because it affects how discovery
+tools see you.
 
 We list it correctly here: https://the402.dev/e/<id>
 And you can see what a client sees:

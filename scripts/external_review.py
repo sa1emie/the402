@@ -51,6 +51,10 @@ PROVIDERS = {
         "default_model": "kimi-k3",
         "env": ["MOONSHOT_API_KEY", "KIMI_API_KEY"],
         "good_at": "judgement calls and argument",
+        # kimi-k3 rejects any temperature other than 1 with a 400. Sending the
+        # usual 0.3 fails every call, which looks like a rate limit until you
+        # read the error body.
+        "temperature": 1,
     },
 }
 
@@ -148,11 +152,18 @@ def post(url, api_key, payload, timeout=300, attempts=4):
             with urllib.request.urlopen(request, timeout=timeout) as response:
                 return json.load(response)
         except urllib.error.HTTPError as err:
-            last = err
+            # Read the body. Providers explain themselves there, and without it
+            # a 400 reads as a generic "Bad Request" that looks like a rate
+            # limit. One such 400 was only "invalid temperature for this model".
+            try:
+                detail = err.read().decode("utf-8", "replace")[:300]
+            except Exception:
+                detail = ""
+            last = RuntimeError("HTTP %s: %s" % (err.code, detail or err.reason))
             if err.code in (429, 500, 502, 503, 529) and i < attempts - 1:
                 time.sleep(8 * (i + 1))
                 continue
-            raise
+            raise last
         except Exception as err:
             last = err
             if i < attempts - 1:
@@ -211,7 +222,7 @@ def review(preset_name, provider, model, files, prompt):
                     {"role": "system", "content": SYSTEM},
                     {"role": "user", "content": "%s\n\n%s" % (prompt, content)},
                 ],
-                "temperature": 0.3,
+                "temperature": spec.get("temperature", 0.3),
                 "stream": False,
             },
         )

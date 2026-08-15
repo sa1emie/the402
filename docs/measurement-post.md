@@ -1,4 +1,4 @@
-# We called all 15,189 x402 endpoints. 46% of them are invisible to the way most tools check.
+# We called all 15,189 x402 endpoints. Of the ones that answer, 46% only do so on POST.
 
 *Measured 2026-08-15. Every number here is re-checkable with one curl command, and the tool that produced them is free.*
 
@@ -21,9 +21,15 @@ answered only when we sent a POST.** A plain GET gets a 404 or a 405 and looks
 exactly like a dead endpoint.
 
 That matters because probing with GET is the obvious thing to do, and it is
-what we did first. Nearly half of all payable endpoints are invisible to a GET-only
-check. If a directory tells you an endpoint is dead, that claim is worth about
-as much as the method it used to ask.
+what we did first. Nearly half of all payable endpoints are invisible to a
+GET-only check.
+
+To be precise about what we are and are not saying: we have not audited how
+any other directory probes. We do not know their methods and we are not
+claiming they get this wrong. What we know is that our own probe got it wrong,
+that the fix changed the answer for 421 endpoints, and that if a tool tells you
+an endpoint is dead, the claim is worth exactly as much as the method behind
+it. Ours is written down below so you can judge it.
 
 ## We got this wrong first, and it cost us 421 endpoints
 
@@ -58,16 +64,24 @@ price that a single GET reports as dead.
 
 ## The full picture
 
-| | Count |
+Every endpoint we called landed in exactly one of these five outcomes, and
+they add up to 15,189:
+
+| Outcome | Count |
 |---|---|
-| Endpoints called | **15,189** across 1,553 hosts |
 | Answered with a payment challenge | 13,932 |
-| Of those, only answer to POST | 6,435 (46%) |
-| Advertise a payment option a caller cannot use | 713 |
 | Live, but need parameters before quoting a price | 116 |
 | Listed as payable, served us content for free | 31 |
 | No payment challenge at all | 272 |
 | Not probeable without inventing a path value | 838 |
+| **Total called** | **15,189** across 1,553 hosts |
+
+These three are subsets of the 13,932 above, not separate buckets:
+
+| Detail | Count |
+|---|---|
+| Only answer to POST | 6,435 (46% of the 13,932) |
+| Advertise a payment option a caller cannot use | 713 |
 | Answered 402 but we could not derive a price | 165 |
 
 Two of those rows are worth pulling out.
@@ -132,5 +146,7 @@ a ninth list was not interesting. Measuring the network properly turned out to
 be, because the measurement is where everyone, us included, was getting it
 wrong.
 
-Numbers are dated because they go stale fast. Bazaar grew from 14,405 to 15,189
-resources in the five days we were working on this.
+Numbers are dated because they go stale fast, and not only upward. Bazaar
+listed 14,405 resources when we started and about 15,200 five days later. As
+of this writing it reports 15,062, so endpoints are being delisted as well as
+added. Our 15,189 is what we called, not what Bazaar holds today.

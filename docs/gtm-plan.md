@@ -4,8 +4,8 @@ Written 2026-08-15, against verified data from the same day.
 
 ## The one-line position
 
-We called all 15,189 x402 endpoints. Most tools guess. We checked, and we say
-plainly what we could not check.
+We called all 15,189 x402 endpoints, and we say plainly what we could not
+check. Not a claim about anyone else's method, a statement about ours.
 
 Not "another x402 directory". The directory is the artifact. The product is the
 measurement.
@@ -23,7 +23,7 @@ We have the receipts for that, because we made the mistake first and fixed it.
 |---|---|
 | Endpoints called | 15,189 across 1,553 hosts |
 | Answer with a payment challenge | 13,932 |
-| **Only answer to POST, invisible to a GET-only probe** | **6,435 (46%)** |
+| **Only answer to POST, so a GET-only probe cannot see them** | **6,435 (46%)** |
 | Wrongly called dead by our own naive probe, before the fix | **421** |
 | Listed as payable but never charge | 31 |
 | Advertise a payment option a caller cannot use | 713 |
@@ -31,8 +31,14 @@ We have the receipts for that, because we made the mistake first and fixed it.
 | Cannot be probed without inventing a path value | 838 |
 | Answer 402 but we cannot derive a price | 165 |
 
-The headline is the 46%. Every directory that probes with GET is blind to nearly half of all payable endpoints. That is a checkable claim about a public network, and
-anyone can rerun it against our free validator.
+The headline is the 46%. A GET-only probe cannot see nearly half of all
+payable endpoints. That is a checkable claim about a public network and anyone
+can rerun it against our free validator.
+
+What we must never say, in the post or anywhere else, is that a named
+competitor probes with GET. We have not audited a single one of them. If one
+already probes POST and we implied otherwise, the positioning dies in public
+on the one post whose entire value is being careful.
 
 ## What we are careful not to claim
 
@@ -47,8 +53,10 @@ people's numbers are wrong.
 ## Audiences, in priority order
 
 1. **Developers building x402 endpoints.** They want to know their endpoint is
-   discoverable and correctly described. We have 421 of them currently
-   mislabelled elsewhere.
+   discoverable and correctly described. We know 421 have a shape that a naive
+   GET-only probe misses, because our own probe missed them. We have not
+   audited what any other directory currently reports about them, so we do not
+   claim they are mislabelled elsewhere.
 2. **Developers building agents that spend.** They want a machine-readable list
    of what is payable, at what price, on which network, callable with which
    method.
@@ -99,7 +107,9 @@ each has time to breathe:
 identify the specific operators whose endpoints are mislabelled elsewhere or
 broken in a way we detected:
 
-- 421 whose endpoints other probes call dead
+- 421 whose endpoints a naive GET-only probe misses, ours included until we
+  fixed it. We know our own probe was wrong about them. We do not know what
+  other directories say, and the outreach must not assert it
 - 713 advertising a payment option that cannot be used
 - 31 listed as paid that are serving for free, which may well be a bug costing
   them money
