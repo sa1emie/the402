@@ -2,18 +2,21 @@
 
 Two things live on Cloudflare Workers:
 
-- **[the402.dev](https://the402.dev)** is a directory of x402 payment endpoints
-  where every listing was checked by a real HTTP request.
+- **[the402.dev](https://the402.dev)** is a directory of x402 payment endpoints.
+  Every listing we could call was called, and the rest are labelled as such.
 - **[api.the402.dev](https://api.the402.dev)** is the validator that does the
   checking. Free, no key, takes any URL.
 
 The directory is the artifact. The measurement is the product. Eight x402
 directories already existed when this started, so listing endpoints was not
-worth doing. Calling all of them and writing down what happened was.
+worth doing. Calling them and writing down what happened was.
 
 ## What it found
 
-Measured 2026-08-15 across 15,189 endpoints on 1,553 hosts:
+Measured 2026-08-15. Bazaar listed 15,189 endpoints across 1,553 hosts. We
+called 14,352 of them; the other 838 have templated paths like `/tx/:hash` that
+need a value we would have to invent, so they are labelled rather than guessed
+at.
 
 | | Count |
 |---|---|
