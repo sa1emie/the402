@@ -1,6 +1,10 @@
-# We called all 15,189 x402 endpoints. Of the ones that answer, 46% only do so on POST.
+# We called 14,352 x402 endpoints. Of the ones that answer, 46% only do so on POST.
 
-*Measured 2026-08-15. Every number here is re-checkable with one curl command, and the tool that produced them is free.*
+*Measured 2026-08-15. Bazaar listed 15,189 endpoints that day. We could call
+14,352 of them; the other 838 have templated paths like `/tx/:hash` that need a
+value we would have to invent. Any single endpoint below can be re-checked with
+one curl against our free validator. The aggregates cannot be, short of
+re-running the whole harvest, and the script that does it is in the repo.*
 
 x402 is a payment protocol built on HTTP 402. A client asks for something, the
 server answers "that costs a fifth of a cent," the client pays, and the server
@@ -17,8 +21,10 @@ So we did that. Here is what came back.
 ## The headline: 46% only answer to POST
 
 Of 13,932 endpoints that returned a payment challenge, **6,435 of them, 46%,
-answered only when we sent a POST.** A plain GET gets a 404 or a 405 and looks
-exactly like a dead endpoint.
+answered only when we sent a POST.** A plain GET usually gets a 404 or a 405,
+which looks exactly like a dead endpoint. Sometimes it returns a 200 carrying a
+description of the real endpoint, which looks like a working free API. Neither
+is a payment challenge.
 
 That matters because probing with GET is the obvious thing to do, and it is
 what we did first. Nearly half of all payable endpoints are invisible to a
@@ -64,8 +70,9 @@ price that a single GET reports as dead.
 
 ## The full picture
 
-Every endpoint we called landed in exactly one of these five outcomes, and
-they add up to 15,189:
+Every endpoint Bazaar listed landed in exactly one of these five outcomes, and
+they add up to 15,189. Four of the five required an actual HTTP request. The
+fifth, the templated paths, is the 838 we could not call:
 
 | Outcome | Count |
 |---|---|
@@ -74,7 +81,8 @@ they add up to 15,189:
 | Listed as payable, served us content for free | 31 |
 | No payment challenge at all | 272 |
 | Not probeable without inventing a path value | 838 |
-| **Total called** | **15,189** across 1,553 hosts |
+| **Total listed on Bazaar** | **15,189** across 1,553 hosts |
+| Of those, actually called | 14,352 |
 
 These three are subsets of the 13,932 above, not separate buckets:
 
@@ -86,11 +94,13 @@ These three are subsets of the 13,932 above, not separate buckets:
 
 Two of those rows are worth pulling out.
 
-**713 endpoints advertise a payment option that does not work.** The x402 spec
+**713 endpoints advertise a payment option a client cannot use.** The x402 spec
 lets a server offer several ways to pay. Some offer a valid one alongside a
 broken one. We found endpoints quoting a price as `"0.016"`, a decimal, where
 the spec requires an integer in atomic units. A client that picks the wrong
-option from the list fails, on an endpoint that is otherwise fine.
+option from the list cannot construct a valid payment. We did not pay to find
+out what happens next, so we say the option violates the spec, not that it
+fails.
 
 **31 endpoints are listed as paid and hand over data for free.** They return
 real content on an unpaid request. For anyone running one of those, that is
@@ -136,7 +146,7 @@ It returns the verdict, the dialect, the price, the network, the payTo address,
 and every HTTP attempt it made so you can audit how it reached its conclusion.
 If you run an x402 endpoint, it will tell you what a client actually sees.
 
-The full result set, all 15,189 rows, is at
+The full result set, all 15,189 rows including the 838 we could not call, is at
 [the402.dev](https://the402.dev), with a JSON API at `/api/listings`.
 
 ## Why we built it
@@ -149,4 +159,5 @@ wrong.
 Numbers are dated because they go stale fast, and not only upward. Bazaar
 listed 14,405 resources when we started and about 15,200 five days later. As
 of this writing it reports 15,062, so endpoints are being delisted as well as
-added. Our 15,189 is what we called, not what Bazaar holds today.
+added. Our 15,189 is what Bazaar listed on the day we measured, of which we called
+14,352. It is not what Bazaar holds today.

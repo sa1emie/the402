@@ -11,10 +11,10 @@ around 8am US Eastern. Everything else follows over the next 48 hours.
 
 ## 1. Show HN
 
-**Title** (80 char limit, this is 69):
+**Title** (80 char limit, this is 65):
 
 ```
-Show HN: We called all 15,189 x402 endpoints. 46% only answer to POST
+Show HN: We called 14,352 x402 endpoints. 46% only answer to POST
 ```
 
 **URL:** https://the402.dev
@@ -28,13 +28,16 @@ and pivoted to measuring the network instead.
 x402 is the HTTP 402 payment protocol. Client asks, server says "that costs
 $0.002", client pays, server delivers. No API key, no signup.
 
-We called every endpoint Coinbase's Bazaar advertises and recorded what
-happened. Two findings worth the post:
+We called every endpoint Coinbase's Bazaar advertises that could be called,
+14,352 of the 15,189 listed. The other 838 have templated paths like /tx/:hash
+that need a value we would have to invent. Two findings worth the post:
 
 1. Of 13,932 endpoints that return a payment challenge, 6,435 (46%) only
-answer to POST. A plain GET gets a 404 or 405 and looks identical to a dead
-endpoint. Probing with GET is the obvious thing to do, so a lot of "this
-endpoint is dead" claims are really "I asked the wrong way".
+answer to POST. A plain GET usually gets a 404 or 405 and looks identical to a
+dead endpoint. Probing with GET is the obvious thing to do, and it is what we
+did first. I have not audited how any other directory probes, so I am not
+claiming anything about theirs. I am saying mine was wrong and here is what
+changed when I fixed it.
 
 2. Our first run was wrong. We labelled 693 endpoints not payable. The real
 number is 272. We were sending an empty JSON body to endpoints that validate
@@ -72,11 +75,11 @@ Post as a thread, one beat per post.
 
 **1/**
 ```
-We called all 15,189 x402 endpoints and wrote down what happened.
+We called 14,352 x402 endpoints and wrote down what happened.
 
-The headline: 46% of payable endpoints only answer to POST.
+The headline: 46% of the ones that answer only do so on POST.
 
-Send a GET and you get a 404. Looks exactly like a dead endpoint.
+Send a GET and you usually get a 404. Looks exactly like a dead endpoint.
 ```
 
 **2/**
@@ -153,7 +156,7 @@ curl "https://api.the402.dev/validate?url=<your-endpoint>"
 Returns verdict, dialect, price, network, payTo, and every HTTP attempt so you
 can audit the conclusion.
 
-All 15,189 rows: https://the402.dev
+All 15,189 rows, including the 838 we couldn't call: https://the402.dev
 ```
 
 **Notes:** do not tag anyone in the thread itself. If it travels, the x402 and
@@ -168,8 +171,8 @@ Post in whichever channel is for dev show-and-tell, not general chat.
 ```
 Built something that might be useful to people here.
 
-I called every endpoint in the Bazaar discovery API (15,189 of them) and
-recorded what each one actually does when you request it.
+I called every endpoint in the Bazaar discovery API that could be called,
+14,352 of the 15,189 listed, and recorded what each one actually does.
 
 Main finding: 46% of payable endpoints only answer to POST. A GET-only probe
 sees a 404 and reads it as dead. That's 6,435 endpoints invisible to the
@@ -197,8 +200,8 @@ first. Skip anywhere it's borderline. Candidates: r/ethdev, r/ethereum.
 
 **Title:**
 ```
-I called all 15,189 x402 endpoints. 46% only answer to POST, and my first
-measurement was wrong.
+I called 14,352 x402 endpoints. 46% of the ones that answer only do so on
+POST, and my first measurement was wrong.
 ```
 
 **Body:** use the Show HN comment text above, minus the last line.
@@ -213,21 +216,22 @@ Schedule for the week after HN so they don't compete.
 
 **Tagline** (60 char limit, this is 52):
 ```
-Every x402 endpoint, actually called and checked
+x402 endpoints, actually called, honestly labelled
 ```
 
 **Description:**
 ```
-the402 is a directory of x402 payment endpoints where every listing was
-verified by a real HTTP request, not copied from a list.
+the402 is a directory of x402 payment endpoints. Every listing we could call
+was called, and the ones we could not are labelled as such rather than guessed
+at.
 
-We called all 15,189 endpoints Coinbase's Bazaar advertises and recorded what
-each one does: which HTTP method it needs, which spec dialect it speaks, what
+We called 14,352 of the 15,189 endpoints Coinbase's Bazaar advertises, and
+recorded what each one does: which HTTP method it needs, which spec dialect it speaks, what
 it charges, and on which network.
 
-46% of payable endpoints only answer to POST, which makes them invisible to
-the usual way of checking. We also found 713 endpoints advertising a payment
-option that cannot be used, and 31 listed as paid that serve for free.
+46% of the endpoints that answer only do so on POST, so a GET-only probe
+cannot see them. We also found 713 advertising a payment option a client
+cannot use, and 31 listed as paid that serve for free.
 
 The validator is free and works on any URL, including yours.
 

@@ -136,8 +136,10 @@ two do not compete, and use the same measurement framing.
 
 ## Metrics
 
-Revenue is not the metric and will be near zero. Anyone promising otherwise is
-misreading a network doing roughly $28k/day, about half of it wash.
+Revenue is near zero at launch and that is expected. It is not acceptable
+permanently, which is what the monetization section above addresses. Anyone
+promising launch-week revenue is misreading a network doing roughly $28k/day
+with about half of that wash.
 
 What we actually track:
 
@@ -150,6 +152,92 @@ What we actually track:
 A realistic good outcome for week one: front page of HN for a few hours, 20 to
 50 referring domains, a few hundred validator calls, and two or three operators
 who fix something because we told them.
+
+The outcome that decides whether this is a business rather than a good post is
+narrower: **one paying customer within thirty days**, from either the monitoring
+tier or the feed. Track replies to the phase 3 outreach as the leading
+indicator, since those are the only conversations where we have already proven
+we can tell someone something useful about their own service.
+
+## How this makes money
+
+The honest starting point: an external red team read this plan and concluded
+there is no business model, only a free tier. That was correct as written.
+Directory free, validator free and unauthenticated, full dataset free at
+/api/listings, and the one asset that could charge was unbuilt. This section
+exists because "revenue is near zero" is an acceptable launch metric and an
+unacceptable permanent one.
+
+The network is small, roughly $14k a day of real volume once wash trading is
+discounted. So self-serve micropayments to a mass audience will not work. What
+does work at this size is selling to the small number of operators who have
+real infrastructure and a specific, provable problem.
+
+We already know exactly who they are, because we measured them.
+
+| Segment | Size | The problem we can prove they have |
+|---|---|---|
+| Hosts serving paid content for free | **9 hosts, 31 endpoints** | Their paywall is off. They are losing money today and do not know |
+| Hosts with an unusable payment option | **86 hosts, 713 endpoints** | Some clients cannot pay them at all |
+| Hosts running 10 or more endpoints | **269 hosts** | Real infrastructure, so a broken endpoint is real lost revenue |
+
+### 1. Endpoint monitoring, the primary product
+
+We already call every endpoint on a schedule. Selling that is close to zero
+marginal cost and the pain is demonstrable rather than hypothetical.
+
+The pitch is one sentence: **your x402 endpoint can break in ways that return a
+200 and look fine, and you will not notice.** We know because we found 9 hosts
+giving their product away and 86 advertising a payment option no client can use.
+
+What a paying operator gets that the free directory does not give them:
+alerting when an endpoint stops answering 402, starts serving without charging,
+or begins advertising a broken option. History, so they can see when it broke.
+Coverage of endpoints not listed on Bazaar at all.
+
+Price at $29 a month per host, annual discount available. Against 269 serious
+hosts, a 5% conversion is about $390 a month and a 10% conversion is about
+$780. That is small. It is also recurring, aligned with work we already do, and
+it makes the re-harvest cadence a funded activity instead of a permanent unpaid
+tax.
+
+The first nine sales calls are already written: they are the phase 3 outreach
+to the hosts whose paywall is off. That email tells someone they are losing
+money and asks for nothing. The monitoring offer is the natural second message,
+and only to people who reply.
+
+### 2. The verified feed, sold to the people who need it most
+
+Eight directories exist and none of them completes a payment check. Our verdicts,
+dated and machine-readable, are the thing they lack. Licensing the feed at $99
+to $299 a month to two or three of them is more revenue than the monitoring tier
+for far less support burden.
+
+This is also the red team's one condition for the project being worth doing: a
+counterparty with money treating the measurement as infrastructure rather than
+content. One signed customer here changes what this is.
+
+### 3. Paid batch validation, for agents
+
+The x402-gated `POST /batch` endpoint, priced per URL in USDC. This is the
+smallest of the three and its real job is proof: it makes us a paying
+participant in the network we index and gives the tutorial production code to
+document. Build it, do not count on it.
+
+### What stays free, permanently
+
+Single validations, the directory, and the full dataset at /api/listings. These
+are what earn the links and the credibility, and charging for them would trade a
+durable position for a rounding error. The paid tiers sell **watching over
+time**, which is the thing a one-off free check cannot give you.
+
+### The honest risk
+
+Every number above is a ceiling, not a forecast. 269 hosts is a small market and
+some of them are hobby projects that will never pay for anything. The plan is to
+find out cheaply: the outreach costs nothing, and if nobody converts after
+thirty conversations, that is a real answer about whether this should stay a
+side project.
 
 ## Budget
 
