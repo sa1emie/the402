@@ -55,6 +55,9 @@ PROVIDERS = {
         # usual 0.3 fails every call, which looks like a rate limit until you
         # read the error body.
         "temperature": 1,
+        # kimi-k3 reasons for a long time on big prompts. 300s was not enough
+        # and surfaced as an opaque read timeout after four retries.
+        "timeout": 900,
     },
 }
 
@@ -135,7 +138,7 @@ def key_for(provider):
     return next((os.environ[n] for n in spec["env"] if os.environ.get(n)), None)
 
 
-def post(url, api_key, payload, timeout=300, attempts=4):
+def post(url, api_key, payload, timeout=900, attempts=4):
     """POST with backoff on rate limits.
 
     Firing several requests at one provider concurrently earns a 429. Retry
@@ -225,6 +228,7 @@ def review(preset_name, provider, model, files, prompt):
                 "temperature": spec.get("temperature", 0.3),
                 "stream": False,
             },
+            timeout=spec.get("timeout", 300),
         )
         return preset_name, provider, body["choices"][0]["message"]["content"], None
     except Exception as err:
