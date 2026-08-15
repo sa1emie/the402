@@ -72,12 +72,18 @@ people's numbers are wrong.
 | Directory with corrected data | Live | The artifact |
 | Free validator anyone can curl | Live | The proof, and the shareable toy |
 | Paid batch endpoint (x402-gated) | Not built | Makes the tutorial real, delivers Product A |
-| README | Not written | Required before anyone reads the repo |
+| README | Written | Required before anyone reads the repo |
+| The measurement post | Written | The launch itself |
+| Launch copy for five channels plus outreach | Written | What actually gets posted |
 | Tutorial: build an x402-paid API on Workers | Not written | The SEO centerpiece |
-| The measurement post | Not written | The launch itself |
 
-Launch is gated on the last three. The measurement post is the launch; the
-tutorial is what keeps ranking after the spike.
+**Launch is gated on nothing that is still unwritten.** The tutorial was
+previously gated on the paid batch endpoint, which is gated on nothing being
+built, which meant launch floated on an unbuilt milestone while the data decayed
+roughly 5% a week. That was a circular dependency and it is now cut: the
+measurement post ships on its own, and the tutorial follows whenever the paid
+endpoint lands. A dated post describing a network that has moved on is a worse
+outcome than a launch without a tutorial.
 
 ## Sequencing
 
