@@ -1,0 +1,39 @@
+fetching from Bazaar...
+  fetched 100/14405
+  fetched 200/14405
+  fetched 300/14405
+  fetched 400/14405
+  fetched 500/14405
+  fetched 600/14405
+bazaar reports 14405 total resources; pulled 600
+deduped to 600 unique resources
+verifying through https://api.the402.dev/validate ...
+  verified 25/600
+  verified 50/600
+  verified 75/600
+  verified 100/600
+  verified 125/600
+  verified 150/600
+  verified 175/600
+  verified 200/600
+  verified 225/600
+  verified 250/600
+  verified 275/600
+  verified 300/600
+  verified 325/600
+  verified 350/600
+  verified 375/600
+  verified 400/600
+  verified 425/600
+  verified 450/600
+  verified 475/600
+  verified 500/600
+  verified 525/600
+  verified 550/600
+  verified 575/600
+  verified 600/600
+
+wrote 600 entries to data/verified-600.json
+  payable        559
+  skipped        32
+  not-x402       9

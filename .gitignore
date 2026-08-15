@@ -1,0 +1,43 @@
+# Secrets. Never commit these.
+**/.secrets.local
+**/.env
+**/.env.*
+.claude/settings.local.json
+
+# The personal proxy worker. Unrelated to this business, holds a live VLESS
+# UUID in client-config.txt, and is being moved to a separate account. It stays
+# local and off GitHub entirely.
+tunnel/
+
+# Dependencies and build state
+node_modules/
+**/.wrangler/
+worker-configuration.d.ts
+
+# Generated SQL. Rebuild with:
+#   python3 scripts/import_to_d1.py data/verified-full-v2.json > directory/seed-full.sql
+directory/seed-full.sql
+directory/seed.sql
+
+# Superseded harvests. data/verified-full-v2.json is the canonical one and is
+# tracked; these are earlier runs kept locally for comparison only.
+data/verified-full.json
+data/verified-600.json
+data/verified-sample.json
+
+# macOS
+.DS_Store
+
+# External review output. Regenerate with scripts/external_review.py.
+docs/external-review-*.md
+
+# Internal team material. Names a real collaborator and describes how we work
+# together. Stays local, never public.
+AMON-*.md
+data/for-amon-curation.json
+
+# Internal briefs and self-critique. Useful to us, useful to a competitor.
+X402_SPRINT_HANDOFF.md
+AUDIT-PROMPT.md
+docs/audit-report.md
+docs/external-review-*.md

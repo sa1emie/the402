@@ -1,0 +1,15 @@
+the402 validator verification
+run at 2026-08-10T08:39:42.309613+00:00
+worker version f095adf1-aaa8-4faa-a29b-5f216616671b
+
+  verdict    via   dialect            price    network   ok     url
+  --------------------------------------------------------------------------------------------------------
+  payable    GET   amount             $0.001   base      2/2    https://api.onesource.io/api/chain/chain-id
+  payable    GET   amount             $0.1     algorand  1/1    https://api.scrape402.site/scrape?url=https:
+  payable    POST  amount             $0.01    base      1/2    https://x402.tavily.com/search
+  payable    POST  amount             $0.007   base      2/2    https://api.exa.ai/search
+  payable    POST  amount             $2       base      2/2    https://stableupload.dev/api/upload
+  payable    POST  amount             $0.15    base      2/2    https://stableenrich.dev/api/fullenrich/peop
+  payable    GET   amount             $0.008   base      2/2    https://api.onesource.io/api/chain/nft-metad
+  not-x402   GET   -                  -        -         0/0    https://example.com
+  not-x402   GET   -                  -        -         0/0    https://api.the402.dev/health

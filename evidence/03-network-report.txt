@@ -1,0 +1,13 @@
+the402 network verification, full run
+date: 2026-08-10T09:29:55Z
+
+Source: Coinbase Bazaar public discovery API (14,405 resources advertised)
+Method: every resource called via api.the402.dev/validate, method pinned from Bazaar metadata
+
+        "total": 14376,
+        "payable": 12917,
+        "dead": 688,
+        "unprobeable": 771,
+        "post_only": 5270,
+        "partial": 766,
+        "price_unknown": 146

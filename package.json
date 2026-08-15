@@ -1,0 +1,19 @@
+{
+  "name": "the402",
+  "version": "0.1.0",
+  "private": true,
+  "description": "x402 endpoint validator and Cloudflare-scoped directory",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "deploy:api": "wrangler deploy --config api/wrangler.jsonc",
+    "dev:api": "wrangler dev --config api/wrangler.jsonc",
+    "types": "wrangler types --config api/wrangler.jsonc",
+    "check:listings": "python3 scripts/check_listings.py data/listings.json"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260810.1",
+    "wrangler": "^4.120.0"
+  }
+}

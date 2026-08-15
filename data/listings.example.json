@@ -1,0 +1,53 @@
+[
+  {
+    "id": "the402-validator",
+    "name": "the402 Endpoint Validator",
+    "url": "https://api.the402.dev/validate",
+    "homepage": "https://the402.dev",
+    "description": "Checks whether a URL is a working x402 endpoint and what it costs. Returns the parsed payment payload, the payTo address, liveness and latency.",
+    "category": "infrastructure",
+    "price_usd": 0.002,
+    "asset": "USDC",
+    "network": "base",
+    "facilitator": "https://x402.org/facilitator",
+    "on_cloudflare": true,
+    "mcp": false,
+    "source": "manual",
+    "source_url": "https://the402.dev",
+    "added_at": "2026-08-05",
+    "notes": "Ours. Real values, kept in sync with the deployed Worker."
+  },
+  {
+    "id": "example-scraper",
+    "name": "Example Scraper API",
+    "url": "https://api.example.com/scrape",
+    "homepage": "https://example.com",
+    "description": "Not a real listing. This entry exists to show the shape of a third-party row. Replace every field before this goes anywhere near production.",
+    "category": "web-scraping",
+    "price_usd": 0.001,
+    "asset": "USDC",
+    "network": "base",
+    "facilitator": "https://x402.org/facilitator",
+    "pay_to": "0x0000000000000000000000000000000000000000",
+    "on_cloudflare": true,
+    "mcp": true,
+    "source": "awesome-x402",
+    "source_url": "https://github.com/xpaysh/awesome-x402",
+    "added_at": "2026-08-05",
+    "notes": "Illustration only. Delete before shipping."
+  },
+  {
+    "id": "example-market-data",
+    "name": "Example Market Data Feed",
+    "url": "https://api.example.com/v1/prices",
+    "description": "Not a real listing either. Shows a minimal row: the optional fields are left out entirely rather than filled with empty text.",
+    "category": "finance-crypto",
+    "price_usd": 0.01,
+    "asset": "USDC",
+    "network": "base",
+    "on_cloudflare": false,
+    "mcp": false,
+    "source": "bazaar",
+    "added_at": "2026-08-05"
+  }
+]

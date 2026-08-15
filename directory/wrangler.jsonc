@@ -1,0 +1,20 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "the402-directory",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-08",
+  "routes": [
+    { "pattern": "the402.dev", "custom_domain": true },
+    { "pattern": "www.the402.dev", "custom_domain": true }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "the402",
+      "database_id": "63ab115f-f184-4d00-8dc5-e97c67dbd560"
+    }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}

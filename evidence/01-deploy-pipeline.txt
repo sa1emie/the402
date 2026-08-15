@@ -1,0 +1,30 @@
+# Deploy pipeline proof
+Date: 2026-08-10T08:12:58Z
+Worker: the402-api   Version: 93547666-7d2f-4aad-bc6f-40bd8c0fc038
+Account: <cloudflare-account-id>
+
+## curl https://api.the402.dev/health
+HTTP/2 200 
+date: Mon, 10 Aug 2026 08:12:58 GMT
+content-type: application/json
+content-length: 121
+report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=us%2FfADBVqjoq2aOWZ82TB%2FpY7Vf01F6C1m%2BYmq4C67yxw%2B4ta2yqX2TMbgsUo1LI9FSpKb7MKpitGL9L4%2FK1komGsicjY04gWPvFmjqnI8Xu52aJvImIbtkOIoVBrzLQgQ%3D%3D"}]}
+nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+server: cloudflare
+cf-ray: a28d89e289fc2d47-DFW
+alt-svc: h3=":443"; ma=86400
+
+{"ok":true,"service":"the402-api","stage":"pipeline-check","colo":"DFW","country":"US","time":"2026-08-10T08:12:58.654Z"}
+
+## curl https://api.the402.dev/
+HTTP/2 200 
+date: Mon, 10 Aug 2026 08:12:58 GMT
+content-type: application/json
+content-length: 112
+report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=KANfW7cLtOJmtqXTdFe4AK%2FWanmobo9C7Daauz1HEiTNrnXdsNklzdNUoffG%2FWrx1i2d9yjNhEJ3wam4ncdrObR3IwGySiJje%2B0xhaHSx3sZCd6wU8%2BSqeTJ7kaWOwts7w%3D%3D"}]}
+nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+server: cloudflare
+cf-ray: a28d89e2eadaf81b-DFW
+alt-svc: h3=":443"; ma=86400
+
+{"service":"the402-api","status":"deploy pipeline proven, product code not written yet","endpoints":["/health"]}
