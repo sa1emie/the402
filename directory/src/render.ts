@@ -130,6 +130,7 @@ header{border-bottom:1px solid var(--line);padding:26px 0 20px}
 h1{margin:0;font-size:20px;letter-spacing:-.01em}
 h1 a{color:inherit;text-decoration:none}
 .tag{font:12px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--mute)}
+.tag a{color:var(--accent);text-decoration:underline;text-underline-offset:2px}
 .lede{margin:10px 0 0;max-width:62ch;color:var(--mute)}
 .stats{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 0;padding:0;list-style:none}
 .stats li{background:var(--card);border:1px solid var(--line);border-radius:7px;padding:8px 12px;font-size:13px}

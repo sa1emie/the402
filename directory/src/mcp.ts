@@ -142,12 +142,12 @@ ${stats.hosts.toLocaleString()} hosts.</p>
 ${stats.checkedOn ? `<p class="tag">Last checked ${esc(stats.checkedOn)}. We send a handshake, we do not authenticate and we do not call a tool.</p>` : ""}
 </div></header>
 <div class="wrap">
-<div class="stats">
-<div class="kv"><strong>${stats.answers.toLocaleString()}</strong><span>answer a handshake (${pct(stats.answers)}%)</span></div>
-<div class="kv"><strong>${stats.gated.toLocaleString()}</strong><span>gated, not broken (${pct(stats.gated)}%)</span></div>
-<div class="kv"><strong>${stats.failing.toLocaleString()}</strong><span>failed outright (${pct(stats.failing)}%)</span></div>
-<div class="kv"><strong>${stats.toolsIndexed.toLocaleString()}</strong><span>tools indexed</span></div>
-</div>
+<ul class="stats">
+<li><b>${stats.answers.toLocaleString()}</b> answer a handshake <span class="muted">(${pct(stats.answers)}%)</span></li>
+<li><b>${stats.gated.toLocaleString()}</b> gated, not broken <span class="muted">(${pct(stats.gated)}%)</span></li>
+<li><b>${stats.failing.toLocaleString()}</b> failed outright <span class="muted">(${pct(stats.failing)}%)</span></li>
+<li><b>${stats.toolsIndexed.toLocaleString()}</b> tools indexed</li>
+</ul>
 
 <p class="note"><strong>Gated is not broken.</strong> ${stats.gated.toLocaleString()} of these
 servers answer with a 401 or 403. They are running and want a credential we do
@@ -177,7 +177,8 @@ separately and always will.</p>
 <thead><tr><th>server</th><th>result</th><th>tools</th><th>host</th></tr></thead>
 <tbody>
 ${rows.map((r) => `<tr>
-<td><a href="/mcp/${esc(r.id)}">${esc(r.server_name || r.name || r.url)}</a><div class="mono muted">${esc(r.url)}</div></td>
+<td class="ep"><a href="/mcp/${esc(r.id)}">${esc(r.server_name || r.name || r.url)}</a>
+<div>${esc(r.url)}</div></td>
 <td>${badge(r.verdict)}</td>
 <td class="mono">${r.tool_count === null ? "<span class=\"muted\">not listed</span>" : r.tool_count}</td>
 <td class="mono muted">${esc(r.host ?? "")}</td>
@@ -265,6 +266,7 @@ export interface ToolRow {
   slug: string;
   tool: string;
   servers: number;
+  hosts: number;
 }
 
 export interface ToolServerRow {
@@ -282,6 +284,10 @@ export function toolsIndexPage(rows: ToolRow[], q: string, total: number, page: 
 <p class="lede">${total.toLocaleString()} tool names, each one reported by a server that
 answered our handshake. Registries tell you a server exists. This tells you
 what it exposes.</p>
+<p class="note">Ordered by how many separate <strong>hosts</strong> expose a
+tool, not how many listings. One operator running a thousand servers that all
+share a toolkit would otherwise fill this entire page, and did before we
+changed it.</p>
 <p class="tag"><a href="/mcp">Back to the server directory</a></p>
 </div></header>
 <div class="wrap">
@@ -291,11 +297,12 @@ what it exposes.</p>
 </form>
 <p class="muted">${total.toLocaleString()} matching.</p>
 <div class="scroll"><table>
-<thead><tr><th>tool</th><th>servers exposing it</th></tr></thead>
+<thead><tr><th>tool</th><th>hosts</th><th>listings</th></tr></thead>
 <tbody>
 ${rows.map((r) => `<tr>
-<td><a href="/tools/${esc(r.slug)}"><code>${esc(r.tool)}</code></a></td>
-<td class="mono">${r.servers}</td>
+<td class="ep"><a href="/tools/${esc(r.slug)}"><code>${esc(r.tool)}</code></a></td>
+<td class="mono">${r.hosts}</td>
+<td class="mono muted">${r.servers}</td>
 </tr>`).join("\n")}
 </tbody></table></div>
 <div class="pager">
@@ -324,7 +331,8 @@ reported, not what it does.</p>
 <thead><tr><th>server</th><th>result when we called it</th><th>tools</th></tr></thead>
 <tbody>
 ${rows.map((r) => `<tr>
-<td><a href="/mcp/${esc(r.id)}">${esc(r.server_name || r.url)}</a><div class="mono muted">${esc(r.url)}</div></td>
+<td class="ep"><a href="/mcp/${esc(r.id)}">${esc(r.server_name || r.url)}</a>
+<div>${esc(r.url)}</div></td>
 <td class="mono">${esc(r.verdict)}</td>
 <td class="mono">${r.tool_count ?? ""}</td>
 </tr>`).join("\n")}

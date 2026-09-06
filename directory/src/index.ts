@@ -481,7 +481,7 @@ async function handle(request: Request, env: Env): Promise<Response> {
         const page = clampInt(url.searchParams.get("page"), 0, 0, 100_000);
         // Only names on 2+ servers get a page. One-offs stay searchable but do
         // not become 27,000 pages of nothing.
-        const where = q ? `WHERE tool LIKE ?1` : "";
+        const where = q ? `WHERE t1.tool LIKE ?1` : "";
         const binds = q ? [`%${q}%`] : [];
         const [rowsRes, countRes] = await Promise.all([
           // Display the name most servers actually use, not the alphabetically
@@ -489,20 +489,25 @@ async function handle(request: Request, env: Env): Promise<Response> {
           // tools: list_categories is on 82 servers and list-categories on 2,
           // so MIN() titled the page after the rare spelling and missed the
           // search everyone is typing.
+          // Order by distinct HOST, not distinct listing. api.mcp.ai alone runs
+          // ~1,100 servers sharing one toolkit, so report_bug looked like the
+          // most common tool in MCP when it is one company's convention on 6
+          // hosts. Ranking by host surfaces what is actually widespread.
           env.DB.prepare(
             `SELECT t1.slug,
                     (SELECT t2.tool FROM mcp_tools t2 WHERE t2.slug = t1.slug
                       GROUP BY t2.tool ORDER BY COUNT(*) DESC, t2.tool ASC LIMIT 1) AS tool,
-                    COUNT(DISTINCT t1.server_id) AS servers
-               FROM mcp_tools t1 ${where}
-              GROUP BY t1.slug HAVING servers >= 2
-              ORDER BY servers DESC, t1.slug ASC
+                    COUNT(DISTINCT t1.server_id) AS servers,
+                    COUNT(DISTINCT s1.host)      AS hosts
+               FROM mcp_tools t1 JOIN mcp_servers s1 ON s1.id = t1.server_id ${where}
+              GROUP BY t1.slug HAVING hosts >= 2
+              ORDER BY hosts DESC, servers DESC, t1.slug ASC
               LIMIT ${PER_PAGE} OFFSET ${page * PER_PAGE}`,
           ).bind(...binds).all<ToolRow>(),
           env.DB.prepare(
             `SELECT COUNT(*) AS n FROM (
-               SELECT slug FROM mcp_tools ${where}
-                GROUP BY slug HAVING COUNT(DISTINCT server_id) >= 2)`,
+               SELECT t1.slug FROM mcp_tools t1 JOIN mcp_servers s1 ON s1.id = t1.server_id ${where}
+                GROUP BY t1.slug HAVING COUNT(DISTINCT s1.host) >= 2)`,
           ).bind(...binds).first<{ n: number }>(),
         ]);
         return html(toolsIndexPage(rowsRes.results ?? [], q, countRes?.n ?? 0, page, PER_PAGE));
@@ -622,7 +627,7 @@ const CACHE_SECONDS: Record<string, number> = {
  * figure we have already retracted stayed live for hours. Changing this string
  * changes every cache key, so a deploy is now also a purge.
  */
-const CACHE_VERSION = "2026-09-06-i";
+const CACHE_VERSION = "2026-09-06-l";
 
 /** Cache under a versioned key so CACHE_VERSION acts as a purge. */
 function cacheKey(request: Request): Request {
