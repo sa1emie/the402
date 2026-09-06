@@ -230,7 +230,7 @@ export function indexPage(
 
   const body = `<header><div class="wrap">
 <h1><a href="/">the402</a> <span class="tag">x402 endpoint directory</span></h1>
-<p class="tag"><a href="/mcp">MCP servers, called rather than listed</a> &middot; <a href="/posts/mcp-registry-measurement">we called 9,109 of them</a> &middot; <a href="/tools">search their tools</a></p>
+<p class="tag"><a href="/mcp">MCP servers, called rather than listed</a> &middot; <a href="/posts/mcp-registry-measurement">we called 16,923 of them</a> &middot; <a href="/tools">search their tools</a></p>
 <p class="lede">Every x402 endpoint we can find, each one called to see what it actually
 answers and what it quotes. Other directories list what providers claim. This one reports what
 the endpoint did when we asked it, and says plainly where we could not tell.</p>

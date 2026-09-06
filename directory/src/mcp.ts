@@ -255,7 +255,7 @@ ${errors.length ? `<h2>What we observed</h2>
  * The tool index.
  *
  * Registries list servers. None of them lists what those servers can do,
- * because listing a server is not the same as calling it. We called 9,109 and
+ * because listing a server is not the same as calling it. We called 16,923 and
  * asked each one what it exposes, so this is the join nobody else holds.
  *
  * Only tools present on two or more servers get their own page. A page per

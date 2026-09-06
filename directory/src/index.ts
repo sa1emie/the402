@@ -437,7 +437,7 @@ async function handle(request: Request, env: Env): Promise<Response> {
 <p class="muted">Written by Salem. The directory of results is at
 <a href="/mcp">the402.dev/mcp</a>, and the script that produced them is
 <a href="https://github.com/sa1emie/the402">in the repo</a>.</p></div>`,
-            "9,109 remote MCP servers, one initialize handshake each. 45% answer, 30% are gated behind a 401 or 403, and 25% fail outright.",
+            "16,923 remote MCP servers, one initialize handshake each. 51% answer, 24% are gated behind a 401 or 403, and 25% fail outright.",
           ),
         );
       }
@@ -622,7 +622,7 @@ const CACHE_SECONDS: Record<string, number> = {
  * figure we have already retracted stayed live for hours. Changing this string
  * changes every cache key, so a deploy is now also a purge.
  */
-const CACHE_VERSION = "2026-09-06-h";
+const CACHE_VERSION = "2026-09-06-i";
 
 /** Cache under a versioned key so CACHE_VERSION acts as a purge. */
 function cacheKey(request: Request): Request {
