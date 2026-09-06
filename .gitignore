@@ -51,3 +51,6 @@ make_avs.py
 
 # Harvest checkpoint files. Transient, rewritten every 500 rows.
 *.partial
+
+# Shared token that exempts our harvester from the /validate rate limit.
+.harvest-key

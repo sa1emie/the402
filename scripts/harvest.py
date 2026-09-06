@@ -27,7 +27,26 @@ VALIDATOR = "https://api.the402.dev/validate"
 # /validate is rate limited to 40 a minute per address. A full harvest makes
 # one call per listed endpoint, so it sends this token to skip the limit.
 # Set the same value with: wrangler secret put HARVEST_KEY --config api/wrangler.jsonc
-HARVEST_KEY = os.environ.get("THE402_HARVEST_KEY", "")
+def _harvest_key():
+    """Token that exempts this harvester from the /validate rate limit.
+
+    /validate allows 40 requests a minute per address. A full harvest makes one
+    call per listed endpoint, about 15,000, so without this the run is throttled
+    into uselessness and most calls come back 429. Reads the environment first,
+    then a gitignored file next to the repo.
+    """
+    key = os.environ.get("THE402_HARVEST_KEY", "").strip()
+    if key:
+        return key
+    path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".harvest-key")
+    try:
+        with open(path, encoding="utf-8") as f:
+            return f.read().strip()
+    except OSError:
+        return ""
+
+
+HARVEST_KEY = _harvest_key()
 UA = "the402-harvest/0.1 (+https://the402.dev)"
 PAGE = 100
 
