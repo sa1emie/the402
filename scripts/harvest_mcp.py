@@ -58,8 +58,16 @@ def rpc(url, payload, timeout, session=None):
     req = urllib.request.Request(url, data=json.dumps(payload).encode(), headers=headers)
     try:
         with urllib.request.urlopen(req, timeout=timeout, context=CTX) as h:
-            raw = h.read(60000).decode("utf-8", "replace")
-            return h.status, parse_body(raw), raw, None, h.headers.get("Mcp-Session-Id")
+            # tools/list responses carry full tool descriptions and can run to
+            # hundreds of KB. A 60KB cap truncated Nansen's list mid-JSON, the
+            # parse failed, and we recorded "no tools" for a server that has
+            # them. Read generously and flag when we hit the ceiling.
+            raw = h.read(2_000_000).decode("utf-8", "replace")
+            truncated = len(raw) >= 2_000_000
+            parsed = parse_body(raw)
+            if truncated and parsed is None:
+                return h.status, None, raw, "response exceeded 2MB read cap", h.headers.get("Mcp-Session-Id")
+            return h.status, parsed, raw, None, h.headers.get("Mcp-Session-Id")
     except urllib.error.HTTPError as e:
         try:
             raw = e.read(4000).decode("utf-8", "replace")
@@ -134,9 +142,13 @@ def probe(item):
     if err:
         row["errors"].append({"severity": "error", "field": "transport", "message": err})
     elif verdict == "jsonrpc-error":
-        e = (payload.get("error") or {})
+        # The spec says error is an object with a message. One server sent a
+        # bare string and took the whole harvest down. We are here precisely to
+        # find servers that do not follow the spec, so never assume they do.
+        e = payload.get("error")
+        msg = e.get("message") if isinstance(e, dict) else e
         row["errors"].append({"severity": "error", "field": "jsonrpc",
-                              "message": str(e.get("message"))[:200]})
+                              "message": str(msg)[:200]})
 
     if verdict == "answers-mcp":
         result = payload.get("result") or {}
@@ -179,6 +191,28 @@ def get_page(url, attempts=5):
                     type(e).__name__, wait), file=sys.stderr)
                 time.sleep(wait)
     raise last
+
+
+def safe_probe(item):
+    """A probe that cannot raise. Anything unexpected becomes a verdict.
+
+    One unhandled exception inside pool.map discards every result gathered so
+    far. Recording "we could not determine this" is the honest outcome and it
+    keeps the other 9,000 rows.
+    """
+    try:
+        return probe(item)
+    except Exception as e:
+        name, url, transport = item
+        return {
+            "name": name, "url": url, "transport": transport,
+            "verdict": "probe-error", "httpStatus": None, "latencyMs": None,
+            "serverName": None, "serverVersion": None, "protocolVersion": None,
+            "toolCount": None, "toolNames": None,
+            "errors": [{"severity": "error", "field": "probe",
+                        "message": "%s: %s" % (type(e).__name__, str(e)[:160])}],
+            "checkedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        }
 
 
 def collect(limit_pages=400, cache_path=None):
@@ -236,11 +270,15 @@ def main():
     print("probing %d ..." % len(todo), file=sys.stderr)
 
     rows = []
+    partial = args.out + ".partial"
     with cf.ThreadPoolExecutor(max_workers=args.concurrency) as pool:
-        for i, row in enumerate(pool.map(probe, todo), 1):
+        for i, row in enumerate(pool.map(safe_probe, todo), 1):
             rows.append(row)
             if i % 100 == 0:
                 print("  probed %d/%d" % (i, len(todo)), file=sys.stderr)
+            if i % 500 == 0:
+                with open(partial, "w", encoding="utf-8") as f:
+                    json.dump(rows, f)
 
     with open(args.out, "w", encoding="utf-8") as f:
         json.dump(rows, f, indent=2, ensure_ascii=False)
