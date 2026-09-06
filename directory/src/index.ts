@@ -448,11 +448,19 @@ async function handle(request: Request, env: Env): Promise<Response> {
         const where = q ? `WHERE tool LIKE ?1` : "";
         const binds = q ? [`%${q}%`] : [];
         const [rowsRes, countRes] = await Promise.all([
+          // Display the name most servers actually use, not the alphabetically
+          // first one. 104 slugs have variants, and they include the busiest
+          // tools: list_categories is on 82 servers and list-categories on 2,
+          // so MIN() titled the page after the rare spelling and missed the
+          // search everyone is typing.
           env.DB.prepare(
-            `SELECT slug, MIN(tool) AS tool, COUNT(DISTINCT server_id) AS servers
-               FROM mcp_tools ${where}
-              GROUP BY slug HAVING servers >= 2
-              ORDER BY servers DESC, tool ASC
+            `SELECT t1.slug,
+                    (SELECT t2.tool FROM mcp_tools t2 WHERE t2.slug = t1.slug
+                      GROUP BY t2.tool ORDER BY COUNT(*) DESC, t2.tool ASC LIMIT 1) AS tool,
+                    COUNT(DISTINCT t1.server_id) AS servers
+               FROM mcp_tools t1 ${where}
+              GROUP BY t1.slug HAVING servers >= 2
+              ORDER BY servers DESC, t1.slug ASC
               LIMIT ${PER_PAGE} OFFSET ${page * PER_PAGE}`,
           ).bind(...binds).all<ToolRow>(),
           env.DB.prepare(
@@ -466,16 +474,23 @@ async function handle(request: Request, env: Env): Promise<Response> {
 
       if (path.startsWith("/tools/")) {
         const slug = decodeURIComponent(path.slice(7));
-        const { results } = await env.DB.prepare(
-          `SELECT t.tool, s.url, s.id, s.server_name, s.verdict, s.tool_count
-             FROM mcp_tools t JOIN mcp_servers s ON s.id = t.server_id
-            WHERE t.slug = ?1
-            ORDER BY s.tool_count DESC LIMIT 200`,
-        ).bind(slug).all<ToolServerRow>();
+        const [listRes, nameRes] = await Promise.all([
+          env.DB.prepare(
+            `SELECT t.tool, s.url, s.id, s.server_name, s.verdict, s.tool_count
+               FROM mcp_tools t JOIN mcp_servers s ON s.id = t.server_id
+              WHERE t.slug = ?1
+              ORDER BY s.tool_count DESC LIMIT 200`,
+          ).bind(slug).all<ToolServerRow>(),
+          env.DB.prepare(
+            `SELECT tool FROM mcp_tools WHERE slug = ?1
+              GROUP BY tool ORDER BY COUNT(*) DESC, tool ASC LIMIT 1`,
+          ).bind(slug).first<{ tool: string }>(),
+        ]);
+        const results = listRes.results;
         if (!results || !results.length) {
           return html(`<p style="font:16px system-ui;padding:40px">No tool by that name. <a href="/tools">Back to the tool index</a>.</p>`, 404);
         }
-        return html(toolDetailPage(results[0].tool, results));
+        return html(toolDetailPage(nameRes?.tool ?? results[0].tool, results));
       }
 
       if (path === "/mcp") {
@@ -569,7 +584,7 @@ const CACHE_SECONDS: Record<string, number> = {
  * figure we have already retracted stayed live for hours. Changing this string
  * changes every cache key, so a deploy is now also a purge.
  */
-const CACHE_VERSION = "2026-09-06-e";
+const CACHE_VERSION = "2026-09-06-f";
 
 /** Cache under a versioned key so CACHE_VERSION acts as a purge. */
 function cacheKey(request: Request): Request {
