@@ -6,6 +6,7 @@
  */
 
 import { detailPage, indexPage, setBeaconToken, submitPage, type Listing, type Stats } from "./render";
+import { FAILING, buildMcpQuery, mcpDetailPage, mcpIndexPage, type McpServer, type McpStats } from "./mcp";
 
 interface Env {
   DB: D1Database;
@@ -64,6 +65,53 @@ async function getStats(db: D1Database): Promise<Stats> {
     .catch(() => {
       // Storing is an optimisation. Failing to store must not fail the page.
     });
+  return fresh;
+}
+
+async function getMcpStats(db: D1Database): Promise<McpStats> {
+  const cached = await db
+    .prepare(`SELECT payload, computed_at FROM mcp_stats_cache WHERE id = 1`)
+    .first<{ payload: string; computed_at: number }>()
+    .catch(() => null);
+  if (cached && Date.now() - Number(cached.computed_at) < STATS_TTL_MS) {
+    try {
+      return JSON.parse(cached.payload) as McpStats;
+    } catch {
+      // Unreadable. Recompute rather than serve nonsense.
+    }
+  }
+  const placeholders = FAILING.map((_, i) => `?${i + 1}`).join(",");
+  const row = await db
+    .prepare(
+      `SELECT COUNT(*)                                            AS total,
+              SUM(verdict = 'answers-mcp')                        AS answers,
+              SUM(verdict = 'auth-required')                      AS gated,
+              SUM(verdict IN (${placeholders}))                   AS failing,
+              COUNT(DISTINCT host)                                AS hosts,
+              SUM(COALESCE(tool_count, 0))                        AS toolsIndexed,
+              MAX(substr(checked_at, 1, 10))                      AS checkedOn
+         FROM mcp_servers`,
+    )
+    .bind(...FAILING)
+    .first<Record<string, number | string>>();
+
+  const fresh: McpStats = {
+    total: Number(row?.total ?? 0),
+    answers: Number(row?.answers ?? 0),
+    gated: Number(row?.gated ?? 0),
+    failing: Number(row?.failing ?? 0),
+    hosts: Number(row?.hosts ?? 0),
+    toolsIndexed: Number(row?.toolsIndexed ?? 0),
+    checkedOn: (row?.checkedOn as string) ?? null,
+  };
+  await db
+    .prepare(
+      `INSERT INTO mcp_stats_cache (id, payload, computed_at) VALUES (1, ?1, ?2)
+       ON CONFLICT(id) DO UPDATE SET payload = excluded.payload, computed_at = excluded.computed_at`,
+    )
+    .bind(JSON.stringify(fresh), Date.now())
+    .run()
+    .catch(() => {});
   return fresh;
 }
 
@@ -359,6 +407,35 @@ async function handle(request: Request, env: Env): Promise<Response> {
         return html(detailPage(row));
       }
 
+      if (path === "/mcp") {
+        const { clause, binds, order } = buildMcpQuery(url.searchParams);
+        const page = clampInt(url.searchParams.get("page"), 0, 0, 100_000);
+        const stats = await getMcpStats(env.DB);
+        const [rowsRes, countRes] = await Promise.all([
+          env.DB.prepare(`SELECT * FROM mcp_servers ${clause} ORDER BY ${order} LIMIT ${PER_PAGE} OFFSET ${page * PER_PAGE}`)
+            .bind(...binds)
+            .all<McpServer>(),
+          clause
+            ? env.DB.prepare(`SELECT COUNT(*) AS n FROM mcp_servers ${clause}`)
+                .bind(...binds)
+                .first<{ n: number }>()
+            : Promise.resolve({ n: stats.total }),
+        ]);
+        const q: Record<string, string> = {};
+        for (const k of ["q", "verdict", "host", "minTools", "sort"]) {
+          const v = url.searchParams.get(k);
+          if (v) q[k] = v;
+        }
+        return html(mcpIndexPage(rowsRes.results ?? [], stats, q, page, countRes?.n ?? 0, PER_PAGE));
+      }
+
+      if (path.startsWith("/mcp/")) {
+        const id = decodeURIComponent(path.slice(5));
+        const row = await env.DB.prepare(`SELECT * FROM mcp_servers WHERE id = ?1`).bind(id).first<McpServer>();
+        if (!row) return html(`<p style="font:16px system-ui;padding:40px">Not found. <a href="/mcp">Back to MCP servers</a>.</p>`, 404);
+        return html(mcpDetailPage(row));
+      }
+
       if (path === "/") {
         const { clause, binds, order } = buildQuery(url.searchParams);
         const page = clampInt(url.searchParams.get("page"), 0, 0, 100_000);
@@ -405,6 +482,7 @@ const CACHE_SECONDS: Record<string, number> = {
   "/": 900,
   "/api/stats": 3600,
   "/api/listings": 900,
+  "/mcp": 900,
   "/sitemap.xml": 86400,
   "/robots.txt": 86400,
 };
@@ -418,7 +496,7 @@ const CACHE_SECONDS: Record<string, number> = {
  * figure we have already retracted stayed live for hours. Changing this string
  * changes every cache key, so a deploy is now also a purge.
  */
-const CACHE_VERSION = "2026-09-05-e";
+const CACHE_VERSION = "2026-09-06-a";
 
 /** Cache under a versioned key so CACHE_VERSION acts as a purge. */
 function cacheKey(request: Request): Request {
@@ -430,6 +508,7 @@ function cacheKey(request: Request): Request {
 function cacheSecondsFor(path: string): number {
   if (path in CACHE_SECONDS) return CACHE_SECONDS[path];
   if (path.startsWith("/e/")) return 3600;
+  if (path.startsWith("/mcp/")) return 3600;
   return 0;
 }
 
