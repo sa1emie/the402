@@ -20,6 +20,7 @@ Standard library only, Python 3.9 compatible.
 import argparse
 import concurrent.futures as cf
 import json
+import os
 import ssl
 import sys
 import time
@@ -156,14 +157,42 @@ def probe(item):
     return row
 
 
-def collect(limit_pages=400):
+def get_page(url, attempts=5):
+    """Fetch one registry page, retrying an intermittent upstream.
+
+    The registry answers fine on a single request and then times out partway
+    through a sustained crawl, which looks like rate limiting. Losing the whole
+    harvest to one dropped page is not acceptable, so retry with widening gaps
+    rather than starting over.
+    """
+    last = None
+    for i in range(attempts):
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": UA})
+            with urllib.request.urlopen(req, timeout=45) as h:
+                return json.load(h)
+        except Exception as e:
+            last = e
+            if i < attempts - 1:
+                wait = 5 * (i + 1)
+                print("  registry page failed (%s), retrying in %ds" % (
+                    type(e).__name__, wait), file=sys.stderr)
+                time.sleep(wait)
+    raise last
+
+
+def collect(limit_pages=400, cache_path=None):
+    if cache_path and os.path.exists(cache_path):
+        with open(cache_path, encoding="utf-8") as f:
+            cached = json.load(f)
+        print("  reusing %d urls from %s" % (len(cached), cache_path), file=sys.stderr)
+        return [tuple(x) for x in cached]
+
     seen, out, cursor = set(), [], None
     pages = 0
     while pages < limit_pages:
         u = REGISTRY + "?limit=100" + (("&cursor=" + cursor) if cursor else "")
-        req = urllib.request.Request(u, headers={"User-Agent": UA})
-        with urllib.request.urlopen(req, timeout=60) as h:
-            body = json.load(h)
+        body = get_page(u)
         servers = body.get("servers") or []
         if not servers:
             break
@@ -178,10 +207,15 @@ def collect(limit_pages=400):
         meta = body.get("metadata") or {}
         cursor = meta.get("nextCursor") or meta.get("next_cursor")
         pages += 1
+        time.sleep(0.3)
         if pages % 10 == 0:
             print("  registry pages: %d, remote urls: %d" % (pages, len(out)), file=sys.stderr)
         if not cursor:
             break
+    if cache_path:
+        with open(cache_path, "w", encoding="utf-8") as f:
+            json.dump([list(x) for x in out], f)
+        print("  cached %d urls to %s" % (len(out), cache_path), file=sys.stderr)
     return out
 
 
@@ -191,10 +225,12 @@ def main():
     ap.add_argument("--all", action="store_true", help="probe every remote server found")
     ap.add_argument("--concurrency", type=int, default=8)
     ap.add_argument("--out", default="data/mcp-verified.json")
+    ap.add_argument("--url-cache", default="data/mcp-registry-urls.json",
+                    help="reuse a previously collected url list instead of re-crawling")
     args = ap.parse_args()
 
     print("collecting registry...", file=sys.stderr)
-    servers = collect()
+    servers = collect(cache_path=args.url_cache)
     print("remote endpoints found: %d" % len(servers), file=sys.stderr)
     todo = servers if args.all else servers[: args.limit]
     print("probing %d ..." % len(todo), file=sys.stderr)
