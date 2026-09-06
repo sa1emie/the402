@@ -215,7 +215,14 @@ def safe_probe(item):
         }
 
 
-def collect(limit_pages=400, cache_path=None):
+def collect(limit_pages=100000, cache_path=None):
+    """Walk the registry until the cursor runs out.
+
+    limit_pages used to default to 400. The registry has well over 800 pages,
+    so the first full harvest silently stopped halfway and the writeup claimed
+    it had called every remote server. A safety cap that is smaller than the
+    data is not a safety cap, it is a wrong answer with no error message.
+    """
     if cache_path and os.path.exists(cache_path):
         with open(cache_path, encoding="utf-8") as f:
             cached = json.load(f)
@@ -246,6 +253,10 @@ def collect(limit_pages=400, cache_path=None):
             print("  registry pages: %d, remote urls: %d" % (pages, len(out)), file=sys.stderr)
         if not cursor:
             break
+    else:
+        print("WARNING: stopped at the %d page cap with a live cursor. "
+              "This result is TRUNCATED and must not be described as complete."
+              % limit_pages, file=sys.stderr)
     if cache_path:
         with open(cache_path, "w", encoding="utf-8") as f:
             json.dump([list(x) for x in out], f)
