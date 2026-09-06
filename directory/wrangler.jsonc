@@ -14,6 +14,12 @@
       "database_id": "63ab115f-f184-4d00-8dc5-e97c67dbd560"
     }
   ],
+  "vars": {
+    // Cloudflare Web Analytics site token. Not a secret: it ships in the page
+    // to every visitor. Cloudflare's automatic injection cannot reach a
+    // Worker-generated response, so we render the tag ourselves.
+    "CF_BEACON_TOKEN": "575486017c404126b86f53253c35f2cd"
+  },
   "observability": {
     "enabled": true
   }
