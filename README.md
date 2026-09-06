@@ -13,7 +13,8 @@ worth doing. Calling them and writing down what happened was.
 
 ## What it found
 
-Measured 2026-09-05. Bazaar listed 15,583 endpoints across 1,876 hosts. We
+Measured 2026-09-05. Bazaar returned 15,630 entries, 15,583 of them unique
+once duplicate URLs are removed, across 1,876 hosts. We
 called 14,906 of them; the other 677 have templated paths like `/tx/:hash` that
 need a value we would have to invent, so they are labelled rather than guessed
 at.

@@ -1,7 +1,8 @@
 # We measured the x402 network twice, three weeks apart. 45% of it was replaced.
 
 *Measured 2026-08-15 and again 2026-09-05. On the second run Bazaar listed
-15,583 endpoints; we could call 14,906 of them, and the other 677 have
+15,630 entries, 15,583 of them unique once duplicate URLs are removed; we
+could call 14,906 of those, and the other 677 have
 templated paths like `/tx/:hash` that need a value we would have to invent. Any
 single endpoint below can be re-checked with one curl against our free
 validator. The aggregates cannot be, short of re-running the whole harvest, and
@@ -104,7 +105,8 @@ price that a single GET reports as dead.
 ## The full picture
 
 Every endpoint Bazaar listed landed in exactly one of these five outcomes, and
-they add up to 15,583. Four of the five required an actual HTTP request. The
+they add up to 15,583, the unique resources in Bazaar's 15,630 entries. Four
+of the five required an actual HTTP request. The
 fifth, the templated paths, is the 677 we could not call:
 
 | Outcome | Count |
@@ -115,7 +117,7 @@ fifth, the templated paths, is the 677 we could not call:
 | No payment challenge at all | 371 |
 | Not probeable without inventing a path value | 677 |
 | Unreachable when we called | 8 |
-| **Total listed on Bazaar** | **15,583** across 1,876 hosts |
+| **Unique resources listed on Bazaar** | **15,583** across 1,876 hosts |
 | Of those, actually called | 14,906 |
 
 These three are subsets of the 14,367 above, not separate buckets:
