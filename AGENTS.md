@@ -25,9 +25,10 @@ from it. It is the source of truth, not the docs and not the site.
 challenge and never complete a payment, so we cannot know that paying delivers
 anything. The same applies to MCP: a server "answers an MCP handshake".
 
-**An auth-gated endpoint is not broken.** 45.8% of listed MCP servers return
-401 or 403. Calling those dead makes a checker wrong about nearly half the
-registry. Gated and broken are different verdicts and must stay different.
+**An auth-gated endpoint is not broken.** 30.3% of listed remote MCP servers
+return 401 or 403 (32.9% by unique host). Calling those dead makes a checker
+wrong about a third of the registry. Gated and broken are different verdicts
+and must stay different.
 
 **Never claim anything about how another directory or scanner probes.** We have
 not audited one of them. Describe what we did and stop.
@@ -75,6 +76,20 @@ Regenerate rather than quote these if you need them in output.
 The finding that matters most: of the 15,188 URLs listed on 15 August, only
 8,377 were still listed on 5 September. The total barely moved while 45% of the
 contents were replaced.
+
+## MCP numbers, 2026-09-05, from data/mcp-verified-v1.json
+
+9,109 remote servers in the official registry, one handshake each. State both
+columns; a reader will check which one you picked.
+
+| | Listings (9,109) | Unique hosts (7,377) |
+|---|---|---|
+| Answer a handshake | 44.8% | 49.5% |
+| Gated, 401 or 403 | 30.3% | 32.9% |
+| Fail outright | 24.9% | 17.6% |
+
+An earlier 400-server sample said 45.8% gated and 12.7% failing. It was the
+first 400 registry entries and was not representative. Do not quote it.
 
 ## Environment traps that cost real time
 
