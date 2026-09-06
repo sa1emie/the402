@@ -236,12 +236,12 @@ export function indexPage(
 answers and what it quotes. Other directories list what providers claim. This one reports what
 the endpoint did when we asked it, and says plainly where we could not tell.</p>
 <ul class="stats">
-<li><b>${stats.total}</b> endpoints</li>
-<li><b>${stats.payable}</b> answer 402</li>
-<li><b>${stats.needsParams}</b> need parameters first</li>
-<li><b>${stats.free}</b> serve without charging</li>
-<li><b>${stats.dead}</b> no payment challenge <span class="muted">(${deadPct}%)</span></li>
-<li><b>${stats.needsPost}</b> only answer to POST</li>
+<li><b>${stats.total.toLocaleString()}</b> endpoints</li>
+<li><b>${stats.payable.toLocaleString()}</b> answer 402</li>
+<li><b>${stats.needsParams.toLocaleString()}</b> need parameters first</li>
+<li><b>${stats.free.toLocaleString()}</b> serve without charging</li>
+<li><b>${stats.dead.toLocaleString()}</b> no payment challenge <span class="muted">(${deadPct}%)</span></li>
+<li><b>${stats.needsPost.toLocaleString()}</b> only answer to POST</li>
 </ul>
 ${stats.verifiedOn ? `<p class="tag">Last verified ${esc(stats.verifiedOn)}. We parse the payment challenge, we do not complete a payment.</p>` : ""}
 </div></header>
