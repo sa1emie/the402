@@ -14,6 +14,7 @@ Standard library only, Python 3.9 compatible.
 
 import argparse
 import json
+import os
 import sys
 import time
 import urllib.error
@@ -23,6 +24,10 @@ from concurrent.futures import ThreadPoolExecutor
 
 BAZAAR = "https://api.cdp.coinbase.com/platform/v2/x402/discovery/resources"
 VALIDATOR = "https://api.the402.dev/validate"
+# /validate is rate limited to 40 a minute per address. A full harvest makes
+# one call per listed endpoint, so it sends this token to skip the limit.
+# Set the same value with: wrangler secret put HARVEST_KEY --config api/wrangler.jsonc
+HARVEST_KEY = os.environ.get("THE402_HARVEST_KEY", "")
 UA = "the402-harvest/0.1 (+https://the402.dev)"
 PAGE = 100
 
@@ -38,7 +43,10 @@ def get_json(url, timeout=30, attempts=4):
     last = None
     for i in range(attempts):
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "application/json"})
+            headers = {"User-Agent": UA, "Accept": "application/json"}
+            if HARVEST_KEY and url.startswith(VALIDATOR):
+                headers["X-the402-Key"] = HARVEST_KEY
+            req = urllib.request.Request(url, headers=headers)
             with urllib.request.urlopen(req, timeout=timeout) as r:
                 return json.load(r)
         except Exception as err:  # noqa: BLE001 - deliberately broad, we retry everything

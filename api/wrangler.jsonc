@@ -6,6 +6,19 @@
   "routes": [
     { "pattern": "api.the402.dev", "custom_domain": true }
   ],
+  // Rate limiting for /validate lives in D1, not in Cloudflare's ratelimit
+  // binding. That binding was configured both under unsafe.bindings and as the
+  // documented top level ratelimits array, and in both cases limit() returned
+  // success for 60 straight calls against one key with the limit set to 40.
+  // The binding exists and a presence check passes, so it fails open silently.
+  // This table is the approach already proven on /contact in the directory.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "the402",
+      "database_id": "63ab115f-f184-4d00-8dc5-e97c67dbd560"
+    }
+  ],
   "observability": {
     "enabled": true
   }

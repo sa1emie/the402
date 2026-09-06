@@ -7,7 +7,13 @@
 
 import { parsePaymentRequired, type ParseResult, type Problem } from "./x402";
 
-interface Env {}
+interface Env {
+  /** Shared with the directory. Holds validate_hits for rate limiting. */
+  DB?: D1Database;
+  /** Shared token that exempts our own harvester, which calls this
+   *  thousands of times per run. Set with `wrangler secret put HARVEST_KEY`. */
+  HARVEST_KEY?: string;
+}
 
 const FETCH_TIMEOUT_MS = 10_000;
 const USER_AGENT = "the402-validator/0.2 (+https://the402.dev)";
@@ -407,15 +413,50 @@ const json = (data: unknown, status = 200) =>
   });
 
 export default {
-  async fetch(request: Request, _env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const colo = (request as Request & { cf?: IncomingRequestCfProperties }).cf?.colo ?? null;
 
     if (url.pathname === "/health") {
-      return json({ ok: true, service: "the402-api", colo, time: new Date().toISOString() });
+      // Report whether the limiter is actually bound. A missing binding used to
+      // fail open and silently, which is how /validate stayed unlimited after
+      // it was supposedly fixed.
+      return json({
+        ok: true, service: "the402-api", colo, time: new Date().toISOString(),
+        rateLimiter: Boolean(env.DB),
+        harvestKeySet: Boolean(env.HARVEST_KEY),
+      });
     }
 
     if (url.pathname === "/validate") {
+      // Our own harvest calls this once per listed endpoint, so it carries a
+      // token and skips the limit. Everyone else gets 40 a minute.
+      const key = request.headers.get("X-the402-Key");
+      const exempt = Boolean(env.HARVEST_KEY) && key === env.HARVEST_KEY;
+      if (!exempt && env.DB) {
+        const ip = request.headers.get("CF-Connecting-IP") ?? "unknown";
+        const now = Date.now();
+        const recent = await env.DB.prepare(
+          `SELECT COUNT(*) AS n FROM validate_hits WHERE ip = ?1 AND ts > ?2`,
+        ).bind(ip, now - 60_000).first<{ n: number }>().catch(() => null);
+        if ((recent?.n ?? 0) >= 40) {
+          return json(
+            {
+              error: "rate limited",
+              message: "40 requests a minute per address. The full result sets are at https://the402.dev and in the repo, which is cheaper than calling this in a loop.",
+            },
+            429,
+          );
+        }
+        // Record the hit, and occasionally sweep rows nobody will read again.
+        await env.DB.prepare(`INSERT INTO validate_hits (ip, ts) VALUES (?1, ?2)`)
+          .bind(ip, now).run().catch(() => {});
+        if (Math.random() < 0.02) {
+          await env.DB.prepare(`DELETE FROM validate_hits WHERE ts < ?1`)
+            .bind(now - 300_000).run().catch(() => {});
+        }
+      }
+
       let target: string | null = null;
       let method: string | null = null;
 
