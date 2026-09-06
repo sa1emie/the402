@@ -5,8 +5,9 @@
  * and a submission form that verifies before it lists.
  */
 
-import { detailPage, indexPage, setBeaconToken, submitPage, type Listing, type Stats } from "./render";
+import { detailPage, indexPage, layout, setBeaconToken, submitPage, type Listing, type Stats } from "./render";
 import { FAILING, buildMcpQuery, mcpDetailPage, mcpIndexPage, type McpServer, type McpStats } from "./mcp";
+import { MCP_POST_HTML } from "./post-mcp";
 
 interface Env {
   DB: D1Database;
@@ -311,6 +312,7 @@ async function handle(request: Request, env: Env): Promise<Response> {
         const urls = [
           "https://the402.dev/",
           "https://the402.dev/mcp",
+          "https://the402.dev/posts/mcp-registry-measurement",
           "https://the402.dev/submit",
           ...(results ?? []).map((r) => `https://the402.dev/e/${r.id}`),
           ...((mcp.results ?? []) as { id: string }[]).map((r) => `https://the402.dev/mcp/${r.id}`),
@@ -414,6 +416,22 @@ async function handle(request: Request, env: Env): Promise<Response> {
         return html(detailPage(row));
       }
 
+      // The measurement needs a URL people can link to, otherwise it cannot be
+      // submitted anywhere and the work stays invisible.
+      if (path === "/posts/mcp-registry-measurement") {
+        return html(
+          layout(
+            "We sent one handshake to every remote server in the MCP registry",
+            `<div class="wrap post">${MCP_POST_HTML}
+<hr>
+<p class="muted">Written by Salem. The directory of results is at
+<a href="/mcp">the402.dev/mcp</a>, and the script that produced them is
+<a href="https://github.com/sa1emie/the402">in the repo</a>.</p></div>`,
+            "9,109 remote MCP servers, one initialize handshake each. 45% answer, 30% are gated behind a 401 or 403, and 25% fail outright.",
+          ),
+        );
+      }
+
       if (path === "/mcp") {
         const { clause, binds, order } = buildMcpQuery(url.searchParams);
         const page = clampInt(url.searchParams.get("page"), 0, 0, 100_000);
@@ -490,6 +508,7 @@ const CACHE_SECONDS: Record<string, number> = {
   "/api/stats": 3600,
   "/api/listings": 900,
   "/mcp": 900,
+  "/posts/mcp-registry-measurement": 3600,
   "/sitemap.xml": 86400,
   "/robots.txt": 86400,
 };
@@ -503,7 +522,7 @@ const CACHE_SECONDS: Record<string, number> = {
  * figure we have already retracted stayed live for hours. Changing this string
  * changes every cache key, so a deploy is now also a purge.
  */
-const CACHE_VERSION = "2026-09-06-b";
+const CACHE_VERSION = "2026-09-06-d";
 
 /** Cache under a versioned key so CACHE_VERSION acts as a purge. */
 function cacheKey(request: Request): Request {

@@ -167,6 +167,12 @@ footer a{color:var(--accent)}
 .note{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent);
 padding:12px 14px;border-radius:7px;margin:16px 0;font-size:13.5px}
 a.back{color:var(--accent);text-decoration:none;font-size:14px}
+.post{max-width:46rem}
+.post h1{font-size:30px;line-height:1.25;margin:26px 0 6px}
+.post h2{font-size:20px;margin:34px 0 10px}
+.post p{line-height:1.65;margin:14px 0}
+.post table{font-size:14px}
+.post hr{border:0;border-top:1px solid var(--line);margin:34px 0}
 `;
 
 /**
@@ -223,7 +229,7 @@ export function indexPage(
 
   const body = `<header><div class="wrap">
 <h1><a href="/">the402</a> <span class="tag">x402 endpoint directory</span></h1>
-<p class="tag"><a href="/mcp">MCP servers, called rather than listed</a></p>
+<p class="tag"><a href="/mcp">MCP servers, called rather than listed</a> &middot; <a href="/posts/mcp-registry-measurement">we called 9,109 of them, here is what came back</a></p>
 <p class="lede">Every x402 endpoint we can find, each one called to see what it actually
 answers and what it quotes. Other directories list what providers claim. This one reports what
 the endpoint did when we asked it, and says plainly where we could not tell.</p>

@@ -138,6 +138,7 @@ export function mcpIndexPage(
 <p class="lede">Every remote server in the official MCP registry, sent one real
 <code>initialize</code> handshake. ${stats.total.toLocaleString()} servers across
 ${stats.hosts.toLocaleString()} hosts.</p>
+<p class="tag"><a href="/posts/mcp-registry-measurement">Read the measurement, method and all</a></p>
 ${stats.checkedOn ? `<p class="tag">Last checked ${esc(stats.checkedOn)}. We send a handshake, we do not authenticate and we do not call a tool.</p>` : ""}
 </div></header>
 <div class="wrap">
