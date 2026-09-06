@@ -10,6 +10,27 @@ Percentages below were generated from `data/mcp-verified-v1.json` on
 2026-09-05 (9,109 remote servers probed): 44.8% answer, 30.3% gated,
 24.9% fail. Re-probe both endpoints the morning of sending.
 
+## The registry numbers, stated two ways
+
+Both are true. They answer different questions, and a hostile reader will
+check whether we picked the flattering one, so show both.
+
+| | Listings (n=9,109) | Unique hosts (n=7,377) |
+|---|---|---|
+| Answer an MCP handshake | 44.8% | 49.5% |
+| Gated behind 401 or 403 | 30.3% | 32.9% |
+| Fail outright | 24.9% | 17.6% |
+
+The gap on the failing row is three hosts: `api.m2mcent.com` with 276 dead
+listings, a `trycloudflare.com` tunnel with 90, and `server.smithery.ai`
+proxies with 189. Registered once each, the failure rate is 17.6%.
+
+**Four of the six target companies with live MCP servers are not in the
+official registry.** Firecrawl, Tavily, Browserbase and Nansen all answer a
+handshake and none of them appear there. Only Exa and Apify are listed. That
+is a stronger opener than "you are listed": their server is live, the registry
+does not know, and we found it anyway.
+
 Live results, 2026-09-05:
 
 | Company | Endpoint | Result | Tools | Server name |
@@ -64,16 +85,19 @@ the402.dev
 ## Firecrawl
 
 To: help@firecrawl.com
-Subject: mcp.firecrawl.dev/mcp answers with 3 tools, one small thing about the bare host
+Subject: mcp.firecrawl.dev/mcp answers with 3 tools, and it is not in the official MCP registry
 
 Hi,
 
 I run the402.dev, a directory that calls every endpoint it lists and records
-what came back. This week I ran it across the MCP registry: 9,109 remote
-servers, one real `initialize` handshake each.
+what came back. This week I ran it across the official MCP registry: 9,109
+remote servers, one real `initialize` handshake each.
 
-`mcp.firecrawl.dev/mcp` answered. It identifies as `firecrawl-fastmcp` and
-returns 3 tools. Clean.
+Your server is not in it. `mcp.firecrawl.dev/mcp` answers cleanly, identifies
+as `firecrawl-fastmcp`, and returns 3 tools, but the official registry has no
+entry for it. I only found it because I went looking. You may have chosen
+that, and if so ignore this paragraph, but a lot of agent tooling now
+discovers servers through that registry first.
 
 One small thing you may already know: the bare host,
 `mcp.firecrawl.dev` without `/mcp`, answers 200 but not with MCP. A client
@@ -82,7 +106,8 @@ something it cannot parse. Not broken, just worth a redirect if you see
 clients doing that.
 
 I am publishing the full measurement next week: 45% of listed
-remote servers answer, 30% are gated, 25% fail outright.
+remote servers answer, 30% are gated, 25% fail outright, and by unique host
+the failure rate is 18%.
 The directory of results goes live with it.
 
 You already pay creators through the Ambassadors program and the affiliate
