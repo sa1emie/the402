@@ -202,6 +202,7 @@ export function layout(title: string, body: string, desc: string): string {
 <meta property="og:type" content="website">
 <style>${CSS}</style>${beacon}</head><body>${body}
 <footer><div class="wrap">
+<p><a href="/about">About and contact</a> &middot; <a href="/mcp">MCP servers</a> &middot; <a href="/tools">Tool index</a> &middot; <a href="https://github.com/sa1emie/the402">Source and data</a></p>
 <p><strong>What "checked" means here.</strong> We send a real HTTP request from
 <a href="https://api.the402.dev">the402 validator</a> and read what comes back. Where an
 endpoint returns a payment challenge we parse it and report the price it quotes.
@@ -299,6 +300,64 @@ ${(page + 1) * perPage < totalMatched ? `<a href="?${new URLSearchParams({ ...q,
     "the402, x402 endpoint directory",
     body,
     `${stats.payable} x402 endpoints that answer with a payment challenge, each called directly, with the price they quote, network and spec dialect.`,
+  );
+}
+
+export function aboutPage(): string {
+  const body = `<div class="wrap post">
+<a class="back" href="/">Back to the directory</a>
+<h1>About the402</h1>
+
+<p>This is a directory that calls every endpoint it lists. Most directories
+publish what a registry says exists. This one sends a real HTTP request to each
+entry, records what came back, and dates it.</p>
+
+<h2>What is here</h2>
+<p>Two datasets. Every x402 endpoint Coinbase's Bazaar lists, and every remote
+server in the official MCP registry. Plus a tool index built from asking those
+servers what they expose, which is the part no registry publishes.</p>
+
+<h2>What "checked" means, and what it does not</h2>
+<p>For x402 we parse the payment challenge. We never complete a payment, so
+nothing here proves that paying returns a resource. An endpoint "answers 402".
+It does not "work".</p>
+<p>For MCP we send one <code>initialize</code> handshake and, on success, one
+<code>tools/list</code>. We do not authenticate and we do not call tools. A
+server that returns 401 is gated, not broken, and we count those separately
+because a checker that conflates them is wrong about 30% of the registry.</p>
+
+<h2>Things we got wrong</h2>
+<p>Twice, publicly. Our first x402 probe only sent GET, so it called 421
+endpoints dead that answer fine on POST. And our validator required payment
+amounts to be integers in atomic units, which is right for one scheme on EVM
+chains and wrong for AWS agent-pay and for XRPL. That mistake made us report
+713 broken endpoints when the real number was 4.</p>
+<p>Both corrections are still in the writeups rather than quietly edited out.
+A measurement project that hides its retractions is worth nothing.</p>
+
+<h2>Get in touch</h2>
+<p>Open an issue at <a href="https://github.com/sa1emie/the402">github.com/sa1emie/the402</a>.
+That is the fastest way to reach me and it keeps the answer public for whoever
+asks next.</p>
+<p>Worth an issue or a message:</p>
+<ul class="ep">
+<li>Your endpoint or server is listed wrong. Tell me and I will recheck it, and
+if we got it wrong I will say so here.</li>
+<li>You want a server added that the registries do not carry. Several live ones
+are missing from the official MCP registry.</li>
+<li>You want the underlying data, the daily diff of what changed, or to talk
+about being featured.</li>
+</ul>
+
+<h2>How it is built</h2>
+<p>Cloudflare Workers and D1. The probe, the harvest scripts and the full result
+sets are in the <a href="https://github.com/sa1emie/the402">repo</a>, so any
+number here can be regenerated rather than taken on trust.</p>
+</div>`;
+  return layout(
+    "About the402",
+    body,
+    "A directory that calls every endpoint it lists, records what came back, and dates it. Method, limits, and the two things we got wrong.",
   );
 }
 

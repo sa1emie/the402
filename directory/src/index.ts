@@ -5,7 +5,7 @@
  * and a submission form that verifies before it lists.
  */
 
-import { detailPage, indexPage, layout, setBeaconToken, submitPage, type Listing, type Stats } from "./render";
+import { aboutPage, detailPage, indexPage, layout, setBeaconToken, submitPage, type Listing, type Stats } from "./render";
 import { FAILING, buildMcpQuery, mcpDetailPage, mcpIndexPage, toolDetailPage, toolsIndexPage,
          type McpServer, type McpStats, type ToolRow, type ToolServerRow } from "./mcp";
 import { MCP_POST_HTML } from "./post-mcp";
@@ -320,6 +320,7 @@ async function handle(request: Request, env: Env): Promise<Response> {
           "https://the402.dev/mcp",
           "https://the402.dev/posts/mcp-registry-measurement",
           "https://the402.dev/tools",
+          "https://the402.dev/about",
           "https://the402.dev/submit",
           ...(results ?? []).map((r) => `https://the402.dev/e/${r.id}`),
           ...((mcp.results ?? []) as { id: string }[]).map((r) => `https://the402.dev/mcp/${r.id}`),
@@ -439,6 +440,8 @@ async function handle(request: Request, env: Env): Promise<Response> {
           ),
         );
       }
+
+      if (path === "/about") return html(aboutPage());
 
       if (path === "/tools") {
         const q = (url.searchParams.get("q") ?? "").trim();
@@ -570,6 +573,7 @@ const CACHE_SECONDS: Record<string, number> = {
   "/api/listings": 900,
   "/mcp": 900,
   "/tools": 900,
+  "/about": 86400,
   "/posts/mcp-registry-measurement": 3600,
   "/sitemap.xml": 86400,
   "/robots.txt": 86400,
@@ -584,7 +588,7 @@ const CACHE_SECONDS: Record<string, number> = {
  * figure we have already retracted stayed live for hours. Changing this string
  * changes every cache key, so a deploy is now also a purge.
  */
-const CACHE_VERSION = "2026-09-06-f";
+const CACHE_VERSION = "2026-09-06-g";
 
 /** Cache under a versioned key so CACHE_VERSION acts as a purge. */
 function cacheKey(request: Request): Request {
