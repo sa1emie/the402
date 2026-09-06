@@ -82,3 +82,11 @@ CREATE TABLE IF NOT EXISTS contact_messages (
 );
 CREATE INDEX IF NOT EXISTS idx_contact_created ON contact_messages(created_at);
 CREATE INDEX IF NOT EXISTS idx_contact_ip      ON contact_messages(ip, created_at);
+
+-- Rate limiting for /submit. Without it anyone could publish arbitrary URLs
+-- into the live directory and proxy /validate around its own limit.
+CREATE TABLE IF NOT EXISTS submit_hits (
+  ip TEXT NOT NULL,
+  ts INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_sh ON submit_hits(ip, ts);

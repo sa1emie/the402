@@ -365,6 +365,29 @@ async function handle(request: Request, env: Env): Promise<Response> {
 
       if (path === "/submit") {
         if (request.method === "POST") {
+          // No limit here meant anyone could push arbitrary URLs straight into
+          // the public directory, burn D1 writes, and use this as a proxy for
+          // /validate that skips its own limit. Five an hour per address is
+          // well above any real submitter. Checked before any work is done, so
+          // a refusal costs one read.
+          const ip = request.headers.get("CF-Connecting-IP") ?? "unknown";
+          const hourAgo = Date.now() - 3_600_000;
+          const recent = await env.DB.prepare(
+            `SELECT COUNT(*) AS n FROM submit_hits WHERE ip = ?1 AND ts > ?2`,
+          ).bind(ip, hourAgo).first<{ n: number }>().catch(() => null);
+          if ((recent?.n ?? 0) >= 5) {
+            return html(
+              submitPage("Five submissions an hour is the limit. Open an issue on GitHub if you have a batch.", false),
+              429,
+            );
+          }
+          await env.DB.prepare(`INSERT INTO submit_hits (ip, ts) VALUES (?1, ?2)`)
+            .bind(ip, Date.now()).run().catch(() => {});
+          if (Math.random() < 0.05) {
+            await env.DB.prepare(`DELETE FROM submit_hits WHERE ts < ?1`)
+              .bind(Date.now() - 86_400_000).run().catch(() => {});
+          }
+
           const form = await request.formData();
           const resource = String(form.get("resource") ?? "").trim();
           const note = String(form.get("note") ?? "").slice(0, 300);
@@ -627,7 +650,7 @@ const CACHE_SECONDS: Record<string, number> = {
  * figure we have already retracted stayed live for hours. Changing this string
  * changes every cache key, so a deploy is now also a purge.
  */
-const CACHE_VERSION = "2026-09-06-m";
+const CACHE_VERSION = "2026-09-06-n";
 
 /** Cache under a versioned key so CACHE_VERSION acts as a purge. */
 function cacheKey(request: Request): Request {
