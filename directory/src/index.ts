@@ -6,7 +6,8 @@
  */
 
 import { detailPage, indexPage, layout, setBeaconToken, submitPage, type Listing, type Stats } from "./render";
-import { FAILING, buildMcpQuery, mcpDetailPage, mcpIndexPage, type McpServer, type McpStats } from "./mcp";
+import { FAILING, buildMcpQuery, mcpDetailPage, mcpIndexPage, toolDetailPage, toolsIndexPage,
+         type McpServer, type McpStats, type ToolRow, type ToolServerRow } from "./mcp";
 import { MCP_POST_HTML } from "./post-mcp";
 
 interface Env {
@@ -309,13 +310,20 @@ async function handle(request: Request, env: Env): Promise<Response> {
         const mcp = await env.DB.prepare(
           `SELECT id FROM mcp_servers ORDER BY tool_count DESC LIMIT 5000`,
         ).all<{ id: string }>().catch(() => ({ results: [] as { id: string }[] }));
+        const tools = await env.DB.prepare(
+          `SELECT slug FROM mcp_tools GROUP BY slug
+            HAVING COUNT(DISTINCT server_id) >= 2
+            ORDER BY COUNT(DISTINCT server_id) DESC LIMIT 4000`,
+        ).all<{ slug: string }>().catch(() => ({ results: [] as { slug: string }[] }));
         const urls = [
           "https://the402.dev/",
           "https://the402.dev/mcp",
           "https://the402.dev/posts/mcp-registry-measurement",
+          "https://the402.dev/tools",
           "https://the402.dev/submit",
           ...(results ?? []).map((r) => `https://the402.dev/e/${r.id}`),
           ...((mcp.results ?? []) as { id: string }[]).map((r) => `https://the402.dev/mcp/${r.id}`),
+          ...((tools.results ?? []) as { slug: string }[]).map((r) => `https://the402.dev/tools/${r.slug}`),
         ];
         return new Response(
           `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
@@ -432,6 +440,44 @@ async function handle(request: Request, env: Env): Promise<Response> {
         );
       }
 
+      if (path === "/tools") {
+        const q = (url.searchParams.get("q") ?? "").trim();
+        const page = clampInt(url.searchParams.get("page"), 0, 0, 100_000);
+        // Only names on 2+ servers get a page. One-offs stay searchable but do
+        // not become 27,000 pages of nothing.
+        const where = q ? `WHERE tool LIKE ?1` : "";
+        const binds = q ? [`%${q}%`] : [];
+        const [rowsRes, countRes] = await Promise.all([
+          env.DB.prepare(
+            `SELECT slug, MIN(tool) AS tool, COUNT(DISTINCT server_id) AS servers
+               FROM mcp_tools ${where}
+              GROUP BY slug HAVING servers >= 2
+              ORDER BY servers DESC, tool ASC
+              LIMIT ${PER_PAGE} OFFSET ${page * PER_PAGE}`,
+          ).bind(...binds).all<ToolRow>(),
+          env.DB.prepare(
+            `SELECT COUNT(*) AS n FROM (
+               SELECT slug FROM mcp_tools ${where}
+                GROUP BY slug HAVING COUNT(DISTINCT server_id) >= 2)`,
+          ).bind(...binds).first<{ n: number }>(),
+        ]);
+        return html(toolsIndexPage(rowsRes.results ?? [], q, countRes?.n ?? 0, page, PER_PAGE));
+      }
+
+      if (path.startsWith("/tools/")) {
+        const slug = decodeURIComponent(path.slice(7));
+        const { results } = await env.DB.prepare(
+          `SELECT t.tool, s.url, s.id, s.server_name, s.verdict, s.tool_count
+             FROM mcp_tools t JOIN mcp_servers s ON s.id = t.server_id
+            WHERE t.slug = ?1
+            ORDER BY s.tool_count DESC LIMIT 200`,
+        ).bind(slug).all<ToolServerRow>();
+        if (!results || !results.length) {
+          return html(`<p style="font:16px system-ui;padding:40px">No tool by that name. <a href="/tools">Back to the tool index</a>.</p>`, 404);
+        }
+        return html(toolDetailPage(results[0].tool, results));
+      }
+
       if (path === "/mcp") {
         const { clause, binds, order } = buildMcpQuery(url.searchParams);
         const page = clampInt(url.searchParams.get("page"), 0, 0, 100_000);
@@ -508,6 +554,7 @@ const CACHE_SECONDS: Record<string, number> = {
   "/api/stats": 3600,
   "/api/listings": 900,
   "/mcp": 900,
+  "/tools": 900,
   "/posts/mcp-registry-measurement": 3600,
   "/sitemap.xml": 86400,
   "/robots.txt": 86400,
@@ -522,7 +569,7 @@ const CACHE_SECONDS: Record<string, number> = {
  * figure we have already retracted stayed live for hours. Changing this string
  * changes every cache key, so a deploy is now also a purge.
  */
-const CACHE_VERSION = "2026-09-06-d";
+const CACHE_VERSION = "2026-09-06-e";
 
 /** Cache under a versioned key so CACHE_VERSION acts as a purge. */
 function cacheKey(request: Request): Request {
@@ -535,6 +582,7 @@ function cacheSecondsFor(path: string): number {
   if (path in CACHE_SECONDS) return CACHE_SECONDS[path];
   if (path.startsWith("/e/")) return 3600;
   if (path.startsWith("/mcp/")) return 3600;
+  if (path.startsWith("/tools/")) return 3600;
   return 0;
 }
 

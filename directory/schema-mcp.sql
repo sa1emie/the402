@@ -35,3 +35,15 @@ CREATE TABLE IF NOT EXISTS mcp_stats_cache (
   payload     TEXT    NOT NULL,
   computed_at INTEGER NOT NULL
 );
+
+-- Which servers expose which tool. The registries list servers; none of them
+-- lists what the servers can do, because none of them called the servers to
+-- find out. This is the join that makes the data worth searching.
+CREATE TABLE IF NOT EXISTS mcp_tools (
+  slug      TEXT NOT NULL,   -- normalised tool name, used in the url
+  tool      TEXT NOT NULL,   -- the name as the server reported it
+  server_id TEXT NOT NULL,   -- mcp_servers.id
+  PRIMARY KEY (slug, server_id)
+);
+CREATE INDEX IF NOT EXISTS idx_tools_slug ON mcp_tools(slug);
+CREATE INDEX IF NOT EXISTS idx_tools_srv  ON mcp_tools(server_id);

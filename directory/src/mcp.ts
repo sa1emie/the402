@@ -138,7 +138,7 @@ export function mcpIndexPage(
 <p class="lede">Every remote server in the official MCP registry, sent one real
 <code>initialize</code> handshake. ${stats.total.toLocaleString()} servers across
 ${stats.hosts.toLocaleString()} hosts.</p>
-<p class="tag"><a href="/posts/mcp-registry-measurement">Read the measurement, method and all</a></p>
+<p class="tag"><a href="/tools">Search what these servers can do</a> &middot; <a href="/posts/mcp-registry-measurement">read the measurement</a></p>
 ${stats.checkedOn ? `<p class="tag">Last checked ${esc(stats.checkedOn)}. We send a handshake, we do not authenticate and we do not call a tool.</p>` : ""}
 </div></header>
 <div class="wrap">
@@ -248,5 +248,94 @@ ${errors.length ? `<h2>What we observed</h2>
     `${r.server_name || r.name || r.url} — MCP server — the402`,
     body,
     `${r.url} ${r.verdict === "answers-mcp" ? "answers an MCP handshake" : r.verdict === "auth-required" ? "is gated behind a credential" : "did not answer an MCP handshake"}. Checked ${r.checked_at ?? ""}.`,
+  );
+}
+
+/**
+ * The tool index.
+ *
+ * Registries list servers. None of them lists what those servers can do,
+ * because listing a server is not the same as calling it. We called 9,109 and
+ * asked each one what it exposes, so this is the join nobody else holds.
+ *
+ * Only tools present on two or more servers get their own page. A page per
+ * one-off name would be 27,000 pages of nothing.
+ */
+export interface ToolRow {
+  slug: string;
+  tool: string;
+  servers: number;
+}
+
+export interface ToolServerRow {
+  tool: string;
+  url: string;
+  id: string;
+  server_name: string | null;
+  verdict: string;
+  tool_count: number | null;
+}
+
+export function toolsIndexPage(rows: ToolRow[], q: string, total: number, page: number, perPage: number): string {
+  const body = `<header><div class="wrap">
+<h1>What MCP servers can actually do</h1>
+<p class="lede">${total.toLocaleString()} tool names, each one reported by a server that
+answered our handshake. Registries tell you a server exists. This tells you
+what it exposes.</p>
+<p class="tag"><a href="/mcp">Back to the server directory</a></p>
+</div></header>
+<div class="wrap">
+<form class="filters" method="get" action="/tools">
+<input type="search" name="q" value="${esc(q)}" placeholder="search tool names, for example: schema, invoice, screenshot">
+<button type="submit">search</button>
+</form>
+<p class="muted">${total.toLocaleString()} matching.</p>
+<div class="scroll"><table>
+<thead><tr><th>tool</th><th>servers exposing it</th></tr></thead>
+<tbody>
+${rows.map((r) => `<tr>
+<td><a href="/tools/${esc(r.slug)}"><code>${esc(r.tool)}</code></a></td>
+<td class="mono">${r.servers}</td>
+</tr>`).join("\n")}
+</tbody></table></div>
+<div class="pager">
+${page > 0 ? `<a href="/tools?q=${encodeURIComponent(q)}&page=${page - 1}">previous</a>` : ""}
+<span class="muted">page ${page + 1}</span>
+${(page + 1) * perPage < total ? `<a href="/tools?q=${encodeURIComponent(q)}&page=${page + 1}">next</a>` : ""}
+</div>
+</div>`;
+  return layout(
+    q ? `MCP tools matching "${q}" — the402` : "What MCP servers can actually do — the402",
+    body,
+    `${total.toLocaleString()} MCP tool names, each reported by a server we called directly.`,
+  );
+}
+
+export function toolDetailPage(tool: string, rows: ToolServerRow[]): string {
+  const answering = rows.filter((r) => r.verdict === "answers-mcp");
+  const body = `<div class="wrap">
+<a class="back" href="/tools">Back to the tool index</a>
+<h1><code>${esc(tool)}</code></h1>
+<p class="lede">${rows.length} server${rows.length === 1 ? "" : "s"} reported a tool by this
+name when we called them. Names are chosen by whoever wrote the server, so two
+tools sharing a name do not have to do the same thing. We record what was
+reported, not what it does.</p>
+<div class="scroll"><table>
+<thead><tr><th>server</th><th>result when we called it</th><th>tools</th></tr></thead>
+<tbody>
+${rows.map((r) => `<tr>
+<td><a href="/mcp/${esc(r.id)}">${esc(r.server_name || r.url)}</a><div class="mono muted">${esc(r.url)}</div></td>
+<td class="mono">${esc(r.verdict)}</td>
+<td class="mono">${r.tool_count ?? ""}</td>
+</tr>`).join("\n")}
+</tbody></table></div>
+<p class="note">${answering.length} of these answered an MCP handshake on the day we
+checked. That is not a promise the tool works, only that the server was running
+and told us the tool existed.</p>
+</div>`;
+  return layout(
+    `${tool} — which MCP servers expose it — the402`,
+    body,
+    `${rows.length} MCP servers report a tool named ${tool}. Each was called directly and dated.`,
   );
 }
