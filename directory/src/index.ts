@@ -5,10 +5,12 @@
  * and a submission form that verifies before it lists.
  */
 
-import { detailPage, indexPage, submitPage, type Listing, type Stats } from "./render";
+import { detailPage, indexPage, setBeaconToken, submitPage, type Listing, type Stats } from "./render";
 
 interface Env {
   DB: D1Database;
+  /** Cloudflare Web Analytics site token. Public, ships in the page. */
+  CF_BEACON_TOKEN?: string;
 }
 
 const PER_PAGE = 50;
@@ -238,6 +240,7 @@ const html = (body: string, status = 200) =>
   });
 
 async function handle(request: Request, env: Env): Promise<Response> {
+  setBeaconToken(env.CF_BEACON_TOKEN ?? "");
     const url = new URL(request.url);
     const path = url.pathname;
 
@@ -415,7 +418,7 @@ const CACHE_SECONDS: Record<string, number> = {
  * figure we have already retracted stayed live for hours. Changing this string
  * changes every cache key, so a deploy is now also a purge.
  */
-const CACHE_VERSION = "2026-09-05-b";
+const CACHE_VERSION = "2026-09-05-c";
 
 /** Cache under a versioned key so CACHE_VERSION acts as a purge. */
 function cacheKey(request: Request): Request {
