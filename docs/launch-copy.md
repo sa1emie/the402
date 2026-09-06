@@ -97,12 +97,12 @@ year are pointing at.
 ```
 What we found across 1,553 hosts:
 
-13,932 answer with a payment challenge
-6,435 of those only via POST
-713 advertise a payment option that cannot be used
-116 need parameters before they'll quote
+14,367 answer with a payment challenge
+7,417 of those only via POST
+129 need parameters before they'll quote
 31 are listed as paid and serve for free
-272 don't answer 402 at all
+371 don't answer 402 at all
+4 advertise a payment option that cannot be used
 ```
 
 **4/**
@@ -178,9 +178,8 @@ Main finding: 46% of payable endpoints only answer to POST. A GET-only probe
 sees a 404 and reads it as dead. That's 6,435 endpoints invisible to the
 obvious way of checking.
 
-Also found 713 endpoints advertising a payment option that can't be used
-(a few quote the price as a decimal where the spec wants atomic units), and 31
-listed as paid that hand data over for free.
+Also found 31 endpoints listed as paid that hand data over for free, which is
+probably costing somebody money right now.
 
 The validator is free if you want to check your own endpoint:
 curl "https://api.the402.dev/validate?url=<your-endpoint>"
@@ -229,9 +228,8 @@ We called 14,352 of the 15,189 endpoints Coinbase's Bazaar advertises, and
 recorded what each one does: which HTTP method it needs, which spec dialect it speaks, what
 it charges, and on which network.
 
-46% of the endpoints that answer only do so on POST, so a GET-only probe
-cannot see them. We also found 713 advertising a payment option a client
-cannot use, and 31 listed as paid that serve for free.
+52% of the endpoints that answer only do so on POST, so a GET-only probe
+cannot see them. We also found 31 listed as paid that serve for free.
 
 The validator is free and works on any URL, including yours.
 
@@ -272,25 +270,20 @@ No action needed on your side, and nothing to buy from me. Thought you'd want
 to know.
 ```
 
-### 6b. The 713 with a broken payment option
+### 6b. Withdrawn
 
-**Subject:** `one of your x402 payment options can't be used`
+This section used to hold an outreach email for the 713 endpoints we believed
+advertised an unusable payment option. **Do not send it.** That finding was our
+validator's bug.
 
-```
-Hi,
+We required `amount` to be an integer in atomic units across every scheme and
+network. That is correct for `exact` on EVM chains and wrong for `agent-pay`
+on AWS, which carries ISO-4217 amounts, and wrong for XRPL IOUs, which are
+natively decimal. The example this email used, `"0.016"`, was a correctly
+formed AWS AgentCore payment option belonging to a real company.
 
-I run the402.dev. We call every x402 endpoint and parse what comes back.
-
-<endpoint> advertises <N> ways to pay and <M> of them can't be used by a
-client. <specific reason, e.g. the amount is quoted as "0.016", a decimal,
-where the spec requires an integer in atomic units>.
-
-The working option is fine, so most clients will be OK. But a client that
-picks the broken one from your accepts array will fail.
-
-Check it yourself:
-curl "https://api.the402.dev/validate?url=<endpoint>"
-```
+After the fix, the count is 4, not 713. At that size it is a handful of
+individual emails written by hand, not a template.
 
 ### 6c. The 421 a naive probe misses
 

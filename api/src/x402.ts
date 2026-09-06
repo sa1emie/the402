@@ -225,10 +225,19 @@ function normalizeRequirement(
       message: 'no price found: neither "amount" (v2) nor "maxAmountRequired" (v1) is present',
     });
   } else if (!DIGITS_ONLY.test(amountAtomic)) {
+    // The atomic-units rule belongs to the schemes and networks we actually
+    // know. agent-pay carries ISO-4217 amounts, where "0.016" is correct, and
+    // XRPL IOUs are natively decimal. Calling those an error marked 713
+    // endpoints as advertising an unusable option when the fault was ours.
+    // Where we cannot judge the format, say so instead of failing it.
+    const judgeable = scheme !== null && KNOWN_SCHEMES.includes(scheme) && netInfo !== null;
     problems.push({
-      severity: "error",
+      severity: judgeable ? "error" : "warning",
       field: `${path}.${amountKey}`,
-      message: `must be an integer string in atomic units, got "${amountAtomic}"`,
+      message: judgeable
+        ? `must be an integer string in atomic units, got "${amountAtomic}"`
+        : `is not an integer string ("${amountAtomic}"), and we cannot judge the ` +
+          `expected format for scheme "${scheme ?? "?"}" on network "${network ?? "?"}"`,
     });
   }
   if (amountKey) amountFieldSeen.add(amountKey);

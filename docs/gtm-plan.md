@@ -28,7 +28,7 @@ We have the receipts for that, because we made the mistake first and fixed it.
 | **Only answer to POST, so a GET-only probe cannot see them** | **6,435 (46%)** |
 | Wrongly called dead by our own naive probe, before the fix | **421** |
 | Listed as payable but never charge | 31 |
-| Advertise a payment option a caller cannot use | 713 |
+| Advertise a payment option a caller cannot use | 4 (was reported as 713, our validator's bug) |
 | Live but need parameters before quoting | 116 |
 | Cannot be probed without inventing a path value | 838 |
 | Answer 402 but we cannot derive a price | 165 |
@@ -118,7 +118,9 @@ broken in a way we detected:
 - 421 whose endpoints a naive GET-only probe misses, ours included until we
   fixed it. We know our own probe was wrong about them. We do not know what
   other directories say, and the outreach must not assert it
-- 713 advertising a payment option that cannot be used
+- 4 advertising a payment option that cannot be used. This was reported as
+  713 until 2026-09-05, when the count turned out to be our own validator
+  applying an EVM atomic-units rule to agent-pay and XRPL rails
 - 31 listed as paid that are serving for free, which may well be a bug costing
   them money
 

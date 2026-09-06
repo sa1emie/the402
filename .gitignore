@@ -41,3 +41,10 @@ X402_SPRINT_HANDOFF.md
 AUDIT-PROMPT.md
 docs/audit-report.md
 docs/external-review-*.md
+
+# Scraped operator contact details. Personal data, and this repo is public.
+target_contacts.json
+
+# Unrelated personal medical document that landed in this working directory.
+ED_After_Visit_Summary_*.pdf
+make_avs.py

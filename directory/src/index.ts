@@ -25,7 +25,47 @@ function clampInt(raw: string | null, fallback: number, min: number, max: number
   return Math.min(Math.max(Math.trunc(value), min), max);
 }
 
+/**
+ * How long a stored stats row is served before it is recomputed.
+ *
+ * The two queries below scan the whole listings table, roughly 30,000 rows
+ * read, and they ran on every single homepage view. That was the largest part
+ * of the 29.2 million rows a day that pushed D1 past its free tier and took
+ * the site down. The underlying data is re-harvested weekly at most.
+ */
+const STATS_TTL_MS = 3_600_000;
+
 async function getStats(db: D1Database): Promise<Stats> {
+  // If stats_cache has not been created yet this throws, and we fall through
+  // to computing directly, which is exactly the old behaviour.
+  const cached = await db
+    .prepare(`SELECT payload, computed_at FROM stats_cache WHERE id = 1`)
+    .first<{ payload: string; computed_at: number }>()
+    .catch(() => null);
+
+  if (cached && Date.now() - Number(cached.computed_at) < STATS_TTL_MS) {
+    try {
+      return JSON.parse(cached.payload) as Stats;
+    } catch {
+      // Stored row is unreadable. Recompute rather than serve nonsense.
+    }
+  }
+
+  const fresh = await computeStats(db);
+  await db
+    .prepare(
+      `INSERT INTO stats_cache (id, payload, computed_at) VALUES (1, ?1, ?2)
+       ON CONFLICT(id) DO UPDATE SET payload = excluded.payload, computed_at = excluded.computed_at`,
+    )
+    .bind(JSON.stringify(fresh), Date.now())
+    .run()
+    .catch(() => {
+      // Storing is an optimisation. Failing to store must not fail the page.
+    });
+  return fresh;
+}
+
+async function computeStats(db: D1Database): Promise<Stats> {
   const [totals, networks] = await Promise.all([
     db
       .prepare(
@@ -197,8 +237,7 @@ const html = (body: string, status = 200) =>
     headers: { "content-type": "text/html; charset=utf-8", "cache-control": "public, max-age=60" },
   });
 
-export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+async function handle(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const path = url.pathname;
 
@@ -236,9 +275,11 @@ export default {
         )
           .bind(...binds)
           .all<Listing>();
-        const total = await env.DB.prepare(`SELECT COUNT(*) AS n FROM listings ${clause}`)
-          .bind(...binds)
-          .first<{ n: number }>();
+        const total = clause
+          ? await env.DB.prepare(`SELECT COUNT(*) AS n FROM listings ${clause}`)
+              .bind(...binds)
+              .first<{ n: number }>()
+          : { n: (await getStats(env.DB)).total };
         return json({
           note: "Every entry was verified by a real HTTP request from api.the402.dev.",
           total: total?.n ?? 0,
@@ -318,14 +359,18 @@ export default {
       if (path === "/") {
         const { clause, binds, order } = buildQuery(url.searchParams);
         const page = clampInt(url.searchParams.get("page"), 0, 0, 100_000);
-        const [rowsRes, countRes, stats] = await Promise.all([
+        const stats = await getStats(env.DB);
+        // With no filter the count is the total we already hold, so the second
+        // full scan of the table is pure waste.
+        const [rowsRes, countRes] = await Promise.all([
           env.DB.prepare(`SELECT * FROM listings ${clause} ORDER BY ${order} LIMIT ${PER_PAGE} OFFSET ${page * PER_PAGE}`)
             .bind(...binds)
             .all<Listing>(),
-          env.DB.prepare(`SELECT COUNT(*) AS n FROM listings ${clause}`)
-            .bind(...binds)
-            .first<{ n: number }>(),
-          getStats(env.DB),
+          clause
+            ? env.DB.prepare(`SELECT COUNT(*) AS n FROM listings ${clause}`)
+                .bind(...binds)
+                .first<{ n: number }>()
+            : Promise.resolve({ n: stats.total }),
         ]);
 
         const q: Record<string, string> = {};
@@ -341,5 +386,67 @@ export default {
       const message = err instanceof Error ? err.message : String(err);
       return json({ error: "directory error", message }, 500);
     }
+}
+
+/**
+ * Edge cache in front of every GET.
+ *
+ * The homepage ran four full scans of a 15,189 row table per view: the page of
+ * results, a COUNT(*) for pagination, and two more inside getStats. That is
+ * roughly 45,000 rows read per visitor against D1's 5,000,000 row daily free
+ * tier, so the directory ran out of quota at about 125 visitors a day and
+ * served a 500 to everyone after that. The dataset is re-harvested weekly at
+ * most, so serving a slightly stale page costs nothing real.
+ */
+const CACHE_SECONDS: Record<string, number> = {
+  "/": 900,
+  "/api/stats": 3600,
+  "/api/listings": 900,
+  "/sitemap.xml": 86400,
+  "/robots.txt": 86400,
+};
+
+/**
+ * Bump this to invalidate every cached page at once.
+ *
+ * Cache API entries survive a deploy, so when the underlying data is corrected
+ * the old answer keeps being served until its TTL expires. That is a
+ * correctness problem for a project whose whole claim is careful numbers: a
+ * figure we have already retracted stayed live for hours. Changing this string
+ * changes every cache key, so a deploy is now also a purge.
+ */
+const CACHE_VERSION = "2026-09-05-b";
+
+/** Cache under a versioned key so CACHE_VERSION acts as a purge. */
+function cacheKey(request: Request): Request {
+  const u = new URL(request.url);
+  u.searchParams.set("__cv", CACHE_VERSION);
+  return new Request(u.toString(), { method: "GET", headers: request.headers });
+}
+
+function cacheSecondsFor(path: string): number {
+  if (path in CACHE_SECONDS) return CACHE_SECONDS[path];
+  if (path.startsWith("/e/")) return 3600;
+  return 0;
+}
+
+export default {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    const ttl = cacheSecondsFor(new URL(request.url).pathname);
+    if (request.method !== "GET" || ttl === 0) return handle(request, env);
+
+    const cache = caches.default;
+    const key = cacheKey(request);
+    const hit = await cache.match(key);
+    if (hit) return hit;
+
+    const response = await handle(request, env);
+    // Never cache an error. A cached 500 outlives the outage that caused it.
+    if (response.status !== 200) return response;
+
+    const cacheable = new Response(response.body, response);
+    cacheable.headers.set("Cache-Control", `public, max-age=${ttl}`);
+    ctx.waitUntil(cache.put(key, cacheable.clone()));
+    return cacheable;
   },
 } satisfies ExportedHandler<Env>;

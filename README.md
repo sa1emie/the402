@@ -13,21 +13,36 @@ worth doing. Calling them and writing down what happened was.
 
 ## What it found
 
-Measured 2026-08-15. Bazaar listed 15,189 endpoints across 1,553 hosts. We
-called 14,352 of them; the other 838 have templated paths like `/tx/:hash` that
+Measured 2026-09-05. Bazaar listed 15,583 endpoints across 1,876 hosts. We
+called 14,906 of them; the other 677 have templated paths like `/tx/:hash` that
 need a value we would have to invent, so they are labelled rather than guessed
 at.
 
 | | Count |
 |---|---|
-| Answer with a payment challenge | 13,932 |
-| Of those, only answer to POST | 6,435 (46%) |
-| Advertise a payment option a caller cannot use | 713 |
-| Need parameters before quoting a price | 116 |
+| Answer with a payment challenge | 14,367 |
+| Of those, only answer to POST | 7,417 (52%) |
+| Advertise a payment option a caller cannot use | 4 |
+| Need parameters before quoting a price | 129 |
 | Listed as payable, served content for free | 31 |
-| No payment challenge at all | 272 |
-| Not probeable without inventing a path value | 838 |
-| Answered 402 but no derivable price | 165 |
+| No payment challenge at all | 371 |
+| Not probeable without inventing a path value | 677 |
+| Answered 402 but no derivable price | 205 |
+
+### A number we got wrong, and what it was
+
+An earlier version of this table said 713 endpoints advertised a payment option
+a caller cannot use. That was our bug, not theirs.
+
+Our validator required the `amount` field to be an integer string in atomic
+units, which is right for the `exact` scheme on the EVM networks we know. It is
+wrong for Amazon Bedrock AgentCore Payments, which uses the `agent-pay` scheme
+with an ISO-4217 asset where `"0.016"` is correct, and wrong for XRPL, whose
+IOU amounts are natively decimal. We were applying an EVM convention to rails
+that do not use it.
+
+The validator now only enforces that rule where it can actually judge the
+scheme and the network, and warns everywhere else. The real count is 4.
 
 Full writeup in [docs/measurement-post.md](docs/measurement-post.md).
 

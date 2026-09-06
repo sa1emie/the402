@@ -57,3 +57,12 @@ CREATE TABLE IF NOT EXISTS submissions (
 );
 
 CREATE INDEX IF NOT EXISTS idx_sub_status ON submissions(status);
+
+-- One row holding the precomputed homepage stats. The queries that build it
+-- scan the whole listings table, and running them per request read 29.2M rows
+-- a day against a 5M free-tier limit, which took the directory down.
+CREATE TABLE IF NOT EXISTS stats_cache (
+  id          INTEGER PRIMARY KEY CHECK (id = 1),
+  payload     TEXT    NOT NULL,
+  computed_at INTEGER NOT NULL
+);
