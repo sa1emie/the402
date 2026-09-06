@@ -303,10 +303,17 @@ async function handle(request: Request, env: Env): Promise<Response> {
         const { results } = await env.DB.prepare(
           `SELECT id FROM listings WHERE verdict = 'payable' ORDER BY id LIMIT 5000`,
         ).all<{ id: string }>();
+        // The MCP servers are half the directory and nothing linked to them,
+        // so no crawler could find them. Both halves go in the sitemap.
+        const mcp = await env.DB.prepare(
+          `SELECT id FROM mcp_servers ORDER BY tool_count DESC LIMIT 5000`,
+        ).all<{ id: string }>().catch(() => ({ results: [] as { id: string }[] }));
         const urls = [
           "https://the402.dev/",
+          "https://the402.dev/mcp",
           "https://the402.dev/submit",
           ...(results ?? []).map((r) => `https://the402.dev/e/${r.id}`),
+          ...((mcp.results ?? []) as { id: string }[]).map((r) => `https://the402.dev/mcp/${r.id}`),
         ];
         return new Response(
           `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
@@ -496,7 +503,7 @@ const CACHE_SECONDS: Record<string, number> = {
  * figure we have already retracted stayed live for hours. Changing this string
  * changes every cache key, so a deploy is now also a purge.
  */
-const CACHE_VERSION = "2026-09-06-a";
+const CACHE_VERSION = "2026-09-06-b";
 
 /** Cache under a versioned key so CACHE_VERSION acts as a purge. */
 function cacheKey(request: Request): Request {
