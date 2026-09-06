@@ -59,23 +59,28 @@ listed, 9,109 expose a remote endpoint. I sent each one a real `initialize`
 handshake.
 
 Yours answered. `mcp.exa.ai/mcp` identifies as `exa-search-server` and
-returns 2 tools on `tools/list`. No auth wall, clean handshake. I mention it
-because 45% of the registry does not, and 30% sits behind
-a 401 or 403, which a naive checker calls dead.
+returns 2 tools on `tools/list`. No auth wall, clean handshake. That puts you
+in the 45% that answers. Another 30% sits behind a 401 or 403, which a naive
+checker calls dead and we do not, and 25% fails outright.
 
-I am publishing the full measurement next week, and the directory of results
-with it. Your partner page names newsletters and communities as things you
+The results are live now at https://the402.dev/mcp, and the writeup goes out
+next week. Your partner page names newsletters and communities as things you
 co-market with, which is what this is: a community of people building agents,
 looking up which servers actually respond.
 
-I would like 20 minutes to talk about what featuring a verified partner looks
-like on the directory and in the post. If there is a better person than the
-partnerships inbox, I am happy to be pointed at them.
+I would like 20 minutes to talk about what featuring Exa on the directory and
+in the post would look like. If there is a better person than the partnerships
+inbox, I am happy to be pointed at them.
 
-You can check any of the above yourself; the validator is free and prints
-every request it makes:
+Your page, with what we recorded and when:
+https://the402.dev/mcp/mcp-exa-ai-mcp
 
-curl -s "https://api.the402.dev/validate?url=https://mcp.exa.ai/mcp"
+And the exact request we sent, if you want to reproduce it:
+
+curl -s -X POST https://mcp.exa.ai/mcp \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json, text/event-stream' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"you","version":"0"}}}'
 
 Salem
 the402.dev
@@ -99,25 +104,27 @@ entry for it. I only found it because I went looking. You may have chosen
 that, and if so ignore this paragraph, but a lot of agent tooling now
 discovers servers through that registry first.
 
-One small thing you may already know: the bare host,
+One small thing you may already know. The bare host,
 `mcp.firecrawl.dev` without `/mcp`, answers 200 but not with MCP. A client
 that takes the hostname from a listing and does not append the path gets
-something it cannot parse. Not broken, just worth a redirect if you see
-clients doing that.
+something it cannot parse. Nothing is broken here. A redirect would catch it
+if you ever see clients hitting the bare host.
 
-I am publishing the full measurement next week: 45% of listed
+The full measurement is live now at https://the402.dev/mcp: 45% of listed
 remote servers answer, 30% are gated, 25% fail outright, and by unique host
 the failure rate is 18%.
-The directory of results goes live with it.
 
 You already pay creators through the Ambassadors program and the affiliate
 program, so you have a working process for this. I would like 20 minutes with
-whoever runs that, Eric if the about page is current, to talk about featuring
-Firecrawl as a verified server in the directory and the post.
+whoever runs that, Eric if the about page is current, to talk about listing
+Firecrawl on the directory and in the post.
 
-Check it yourself, the validator is free:
+The exact request we sent, if you want to reproduce it:
 
-curl -s "https://api.the402.dev/validate?url=https://mcp.firecrawl.dev/mcp"
+curl -s -X POST https://mcp.firecrawl.dev/mcp \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json, text/event-stream' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"you","version":"0"}}}'
 
 Salem
 the402.dev
