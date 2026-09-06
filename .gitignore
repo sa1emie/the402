@@ -48,3 +48,6 @@ target_contacts.json
 # Unrelated personal medical document that landed in this working directory.
 ED_After_Visit_Summary_*.pdf
 make_avs.py
+
+# Harvest checkpoint files. Transient, rewritten every 500 rows.
+*.partial
