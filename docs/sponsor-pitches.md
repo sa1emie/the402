@@ -6,9 +6,9 @@ handshake, and both run programs that already pay or co-market with developer
 content. Zero of the seven researched companies publish a rate card, so the
 ask in both emails is a call, not a price. Salem closes on the call.
 
-**Do not send until the `{...}` placeholders are filled from the finished
-harvest.** Every number in a sent email has to come from
-`data/mcp-verified-v1.json`, regenerated, not remembered.
+Percentages below were generated from `data/mcp-verified-v1.json` on
+2026-09-05 (9,109 remote servers probed): 44.8% answer, 30.3% gated,
+24.9% fail. Re-probe both endpoints the morning of sending.
 
 Live results, 2026-09-05:
 
@@ -39,7 +39,7 @@ handshake.
 
 Yours answered. `mcp.exa.ai/mcp` identifies as `exa-search-server` and
 returns 2 tools on `tools/list`. No auth wall, clean handshake. I mention it
-because {ANSWERS_PCT}% of the registry does not, and {GATED_PCT}% sits behind
+because 45% of the registry does not, and 30% sits behind
 a 401 or 403, which a naive checker calls dead.
 
 I am publishing the full measurement next week, and the directory of results
@@ -81,8 +81,8 @@ that takes the hostname from a listing and does not append the path gets
 something it cannot parse. Not broken, just worth a redirect if you see
 clients doing that.
 
-I am publishing the full measurement next week: {ANSWERS_PCT}% of listed
-remote servers answer, {GATED_PCT}% are gated, {BROKEN_PCT}% fail outright.
+I am publishing the full measurement next week: 45% of listed
+remote servers answer, 30% are gated, 25% fail outright.
 The directory of results goes live with it.
 
 You already pay creators through the Ambassadors program and the affiliate
