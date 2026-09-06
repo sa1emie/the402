@@ -66,3 +66,19 @@ CREATE TABLE IF NOT EXISTS stats_cache (
   payload     TEXT    NOT NULL,
   computed_at INTEGER NOT NULL
 );
+
+-- Inbound messages from the site. Kept in D1 rather than emailed, because
+-- the402.dev has no MX record and a personal address on a public page is
+-- permanent spam bait.
+CREATE TABLE IF NOT EXISTS contact_messages (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  name       TEXT,
+  email      TEXT,
+  topic      TEXT,
+  message    TEXT NOT NULL,
+  ip         TEXT,
+  created_at INTEGER NOT NULL,
+  handled    INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_contact_created ON contact_messages(created_at);
+CREATE INDEX IF NOT EXISTS idx_contact_ip      ON contact_messages(ip, created_at);

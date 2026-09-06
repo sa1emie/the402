@@ -5,7 +5,7 @@
  * and a submission form that verifies before it lists.
  */
 
-import { aboutPage, detailPage, indexPage, layout, setBeaconToken, submitPage, type Listing, type Stats } from "./render";
+import { aboutPage, contactPage, detailPage, indexPage, layout, setBeaconToken, submitPage, type Listing, type Stats } from "./render";
 import { FAILING, buildMcpQuery, mcpDetailPage, mcpIndexPage, toolDetailPage, toolsIndexPage,
          type McpServer, type McpStats, type ToolRow, type ToolServerRow } from "./mcp";
 import { MCP_POST_HTML } from "./post-mcp";
@@ -321,6 +321,7 @@ async function handle(request: Request, env: Env): Promise<Response> {
           "https://the402.dev/posts/mcp-registry-measurement",
           "https://the402.dev/tools",
           "https://the402.dev/about",
+          "https://the402.dev/contact",
           "https://the402.dev/submit",
           ...(results ?? []).map((r) => `https://the402.dev/e/${r.id}`),
           ...((mcp.results ?? []) as { id: string }[]).map((r) => `https://the402.dev/mcp/${r.id}`),
@@ -442,6 +443,38 @@ async function handle(request: Request, env: Env): Promise<Response> {
       }
 
       if (path === "/about") return html(aboutPage());
+
+      if (path === "/contact") {
+        if (request.method !== "POST") return html(contactPage(null, false));
+
+        // A public POST with no limit is the abuse scenario the audit has
+        // warned about since August, and pointing Hacker News at one is how
+        // that stops being hypothetical. Three per address per hour.
+        const ip = request.headers.get("CF-Connecting-IP") ?? "unknown";
+        const hourAgo = Date.now() - 3_600_000;
+        const recent = await env.DB.prepare(
+          `SELECT COUNT(*) AS n FROM contact_messages WHERE ip = ?1 AND created_at > ?2`,
+        ).bind(ip, hourAgo).first<{ n: number }>();
+        if ((recent?.n ?? 0) >= 3) {
+          return html(contactPage("Three messages an hour is the limit. Try again later, or open a GitHub issue.", false), 429);
+        }
+
+        const form = await request.formData();
+        const message = String(form.get("message") ?? "").trim().slice(0, 4000);
+        if (message.length < 10) {
+          return html(contactPage("The message was empty or too short to act on.", false), 400);
+        }
+        await env.DB.prepare(
+          `INSERT INTO contact_messages (name, email, topic, message, ip, created_at)
+           VALUES (?1, ?2, ?3, ?4, ?5, ?6)`,
+        ).bind(
+          String(form.get("name") ?? "").trim().slice(0, 80) || null,
+          String(form.get("email") ?? "").trim().slice(0, 120) || null,
+          String(form.get("topic") ?? "other").slice(0, 40),
+          message, ip, Date.now(),
+        ).run();
+        return html(contactPage("Thanks, it is stored and I will read it.", true));
+      }
 
       if (path === "/tools") {
         const q = (url.searchParams.get("q") ?? "").trim();
@@ -574,6 +607,7 @@ const CACHE_SECONDS: Record<string, number> = {
   "/mcp": 900,
   "/tools": 900,
   "/about": 86400,
+  "/contact": 0,
   "/posts/mcp-registry-measurement": 3600,
   "/sitemap.xml": 86400,
   "/robots.txt": 86400,
@@ -588,7 +622,7 @@ const CACHE_SECONDS: Record<string, number> = {
  * figure we have already retracted stayed live for hours. Changing this string
  * changes every cache key, so a deploy is now also a purge.
  */
-const CACHE_VERSION = "2026-09-06-g";
+const CACHE_VERSION = "2026-09-06-h";
 
 /** Cache under a versioned key so CACHE_VERSION acts as a purge. */
 function cacheKey(request: Request): Request {

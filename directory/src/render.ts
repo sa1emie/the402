@@ -202,7 +202,7 @@ export function layout(title: string, body: string, desc: string): string {
 <meta property="og:type" content="website">
 <style>${CSS}</style>${beacon}</head><body>${body}
 <footer><div class="wrap">
-<p><a href="/about">About and contact</a> &middot; <a href="/mcp">MCP servers</a> &middot; <a href="/tools">Tool index</a> &middot; <a href="https://github.com/sa1emie/the402">Source and data</a></p>
+<p><a href="/about">About</a> &middot; <a href="/contact">Contact</a> &middot; <a href="/mcp">MCP servers</a> &middot; <a href="/tools">Tool index</a> &middot; <a href="https://github.com/sa1emie/the402">Source and data</a></p>
 <p><strong>What "checked" means here.</strong> We send a real HTTP request from
 <a href="https://api.the402.dev">the402 validator</a> and read what comes back. Where an
 endpoint returns a payment challenge we parse it and report the price it quotes.
@@ -303,6 +303,36 @@ ${(page + 1) * perPage < totalMatched ? `<a href="?${new URLSearchParams({ ...q,
   );
 }
 
+export function contactPage(message: string | null, ok: boolean): string {
+  const body = `<div class="wrap post">
+<a class="back" href="/about">Back to about</a>
+<h1>Get in touch</h1>
+${message ? `<p class="note"><strong>${ok ? "Sent." : "Not sent."}</strong> ${esc(message)}</p>` : ""}
+<p>Worth writing about: a listing we got wrong, a live server the registries do
+not carry, access to the underlying data or the daily diff of what changed, or
+being featured on the directory.</p>
+<p>If you would rather keep it public, open an issue at
+<a href="https://github.com/sa1emie/the402">github.com/sa1emie/the402</a> and the
+answer stays visible for whoever asks next.</p>
+<form method="post" action="/contact" class="filters" style="display:block;max-width:34rem">
+<p><label>Your name<br><input type="text" name="name" maxlength="80" style="width:100%"></label></p>
+<p><label>Email, so I can reply<br><input type="email" name="email" maxlength="120" style="width:100%"></label></p>
+<p><label>Topic<br><select name="topic" style="width:100%">
+<option value="wrong-listing">A listing looks wrong</option>
+<option value="add-server">Add a server or endpoint</option>
+<option value="data">The data or the daily diff</option>
+<option value="featured">Being featured</option>
+<option value="other">Something else</option>
+</select></label></p>
+<p><label>Message<br><textarea name="message" rows="7" maxlength="4000" required style="width:100%"></textarea></label></p>
+<p><button type="submit">Send</button></p>
+</form>
+<p class="muted">Messages are stored on this site and read by a person. No
+newsletter, no list, nothing forwarded anywhere.</p>
+</div>`;
+  return layout("Get in touch — the402", body, "Contact the402 about a listing, the data, or being featured.");
+}
+
 export function aboutPage(): string {
   const body = `<div class="wrap post">
 <a class="back" href="/">Back to the directory</a>
@@ -336,9 +366,9 @@ chains and wrong for AWS agent-pay and for XRPL. That mistake made us report
 A measurement project that hides its retractions is worth nothing.</p>
 
 <h2>Get in touch</h2>
-<p>Open an issue at <a href="https://github.com/sa1emie/the402">github.com/sa1emie/the402</a>.
-That is the fastest way to reach me and it keeps the answer public for whoever
-asks next.</p>
+<p><a href="/contact">Send me a message</a>, or open an issue at
+<a href="https://github.com/sa1emie/the402">github.com/sa1emie/the402</a> if you
+would rather keep it public.</p>
 <p>Worth an issue or a message:</p>
 <ul class="ep">
 <li>Your endpoint or server is listed wrong. Tell me and I will recheck it, and
